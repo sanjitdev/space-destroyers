@@ -7,9 +7,10 @@ export class StatsManager {
   private livesLost = 0;
   private peakCombo = 0;
 
-  recordShot(): void      { this.shotsFired++; }
-  recordKill(): void      { this.enemiesKilled++; }
-  recordBossKill(): void  { this.bossesKilled++; }
+  recordShot(): void        { this.shotsFired++; }
+  recordKill(): void        { this.enemiesKilled++; }
+  recordBossKill(): void    { this.bossesKilled++; }
+  getEnemiesKilled(): number { return this.enemiesKilled; }
   recordDamage(): void    { this.livesLost++; }
   recordCombo(n: number): void { if (n > this.peakCombo) this.peakCombo = n; }
 

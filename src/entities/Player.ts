@@ -3,6 +3,7 @@ import {
   PLAYER_FIRE_COOLDOWN_MS,
   PLAYER_INVULNERABILITY_MS,
   PLAYER_LIVES,
+  PLAYER_MAX_LIVES,
   PLAYER_SPEED,
   POWER_UP_TINTS,
   type PowerUpType,
@@ -13,6 +14,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private lives = PLAYER_LIVES;
   private fireCooldownMs = 0;
   private invulnerabilityMs = 0;
+  private autoFireEnabled = false;
   private readonly shipSpeed: number;
   private readonly shipCooldownMod: number;
 
@@ -27,6 +29,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.allowGravity = false;
     this.setCollideWorldBounds(true);
     this.setDepth(5);
+    this.setScale(ship.gameScale);
+    // Constrain physics body to the core hull (excludes wings/exhaust extremities)
+    body.setSize(this.displayWidth * 0.52, this.displayHeight * 0.48);
   }
 
   update(deltaMs: number, horizontalInput: number, touchTargetX: number | null): void {
@@ -72,6 +77,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   isOutOfLives(): boolean {
     return this.lives <= 0;
+  }
+
+  /** Adds one life, capped at PLAYER_MAX_LIVES. Returns true if gained. */
+  addLife(): boolean {
+    if (this.lives >= PLAYER_MAX_LIVES) return false;
+    this.lives++;
+    return true;
+  }
+
+  toggleAutoFire(): void {
+    this.autoFireEnabled = !this.autoFireEnabled;
+  }
+
+  isAutoFireEnabled(): boolean {
+    return this.autoFireEnabled;
   }
 
   setPowerGlow(activeTypes: PowerUpType[]): void {

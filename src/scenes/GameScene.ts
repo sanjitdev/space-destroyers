@@ -16,7 +16,7 @@ import { StatsManager } from '../managers/StatsManager';
 import { TimerManager } from '../managers/TimerManager';
 import { FloatingText } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
-import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type GameMode } from '../utils/Constants';
+import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type EnemyType, type GameMode } from '../utils/Constants';
 import { Storage } from '../utils/Storage';
 
 export class GameScene extends Phaser.Scene {
@@ -35,11 +35,14 @@ export class GameScene extends Phaser.Scene {
   private comboManager!: ComboManager;
   private bossManager!: BossManager;
   private statsManager!: StatsManager;
+  private backgroundNebula!: Phaser.GameObjects.TileSprite;
   private background!: Phaser.GameObjects.TileSprite;
   private backgroundFar!: Phaser.GameObjects.TileSprite;
   private comboText!: Phaser.GameObjects.Text;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private fireKey?: Phaser.Input.Keyboard.Key;
+  private usePowerUpKey?: Phaser.Input.Keyboard.Key;
+  private homingBullets: EnemyBullet[] = [];
   private movePointerId: number | null = null;
   private firePointerId: number | null = null;
   private touchMoveX: number | null = null;
@@ -62,9 +65,10 @@ export class GameScene extends Phaser.Scene {
     const theme = THEMES[Storage.getTheme()];
     this.themeBulletTint = theme.bulletTint;
 
-    // Parallax backgrounds — far layer scrolls slower
-    this.backgroundFar = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg-far').setOrigin(0).setAlpha(0.55).setDepth(-2);
-    this.background = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint).setDepth(-1);
+    // Parallax backgrounds — three layers; nebula deepest, near stars shallowest
+    this.backgroundNebula = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-nebula').setOrigin(0).setDepth(-3);
+    this.backgroundFar = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg-far').setOrigin(0).setAlpha(0.70).setDepth(-2);
+    this.background = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint).setAlpha(0.85).setDepth(-1);
 
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
     this.input.addPointer(2);
@@ -87,18 +91,24 @@ export class GameScene extends Phaser.Scene {
     this.statsManager = new StatsManager();
     this.hud = new HUD(this, () => this.toggleMute());
 
-    // Combo counter — floats near player area, depth above HUD
-    this.comboText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 130, '', {
+    // Combo counter — anchored in the HUD header, above all other HUD elements
+    this.comboText = this.add.text(GAME_WIDTH / 2, 66, '', {
       color: '#ffe050',
       fontFamily: 'Arial Black, sans-serif',
-      fontSize: '28px',
+      fontSize: '18px',
       stroke: '#09101f',
-      strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(25).setAlpha(0);
+      strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 10, fill: true },
+    }).setOrigin(0.5).setDepth(25).setAlpha(0).setScrollFactor(0);
 
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.fireKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.usePowerUpKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.M).on('down', () => this.toggleMute());
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F).on('down', () => {
+      this.player.toggleAutoFire();
+      this.syncHud();
+    });
 
     this.createTouchControls();
     this.createCollisions();
@@ -112,6 +122,7 @@ export class GameScene extends Phaser.Scene {
 
     const frameDelta = Math.min(delta, 50);
 
+    this.backgroundNebula.tilePositionY -= 0.07;
     this.backgroundFar.tilePositionY -= 0.35;
     this.background.tilePositionY -= 0.9;
     this.audioManager.update(frameDelta);
@@ -121,17 +132,34 @@ export class GameScene extends Phaser.Scene {
     this.difficultyManager.update(this.timerManager.getElapsedMs());
     this.enemySpawnManager.update(frameDelta);
 
-    // Boss spawn check + update
-    if (this.bossManager.checkSpawn(this.timerManager.getElapsedMs())) {
-      this.showBossWarning();
+    // Boss spawn check — kill-based
+    if (this.bossManager.checkSpawn(this.statsManager.getEnemiesKilled())) {
+      this.showBossWarning(
+        this.bossManager.getActiveBossName(),
+        this.bossManager.getActiveBossLevel(),
+      );
     }
     const boss = this.bossManager.getBoss();
     if (boss?.active) {
-      boss.update(frameDelta, (x, y) => this.spawnEnemyBullet(x, y, 0, 260));
-      this.hud.setBossHp(boss.getHpFraction());
+      boss.update(
+        frameDelta,
+        this.player.x, this.player.y,
+        (x, y, vx, vy) => this.spawnEnemyBullet(x, y, vx, vy),
+        (ability) => this.handleBossSpecial(ability),
+      );
+      if (boss.checkJustEnteredPhase2()) this.handleBossPhase2Transition(boss);
+      this.hud.setBossHp(boss.getHpFraction(), boss.getName(), boss.getLevel());
     } else {
       this.hud.setBossHp(null);
     }
+
+    // E key — use stored power-up
+    if (Phaser.Input.Keyboard.JustDown(this.usePowerUpKey!)) {
+      this.useStoredPowerUp();
+    }
+
+    // Steer homing bullets toward player
+    this.updateHomingBullets(frameDelta);
 
     const horizontalInput = this.getHorizontalInput();
     this.player.update(frameDelta, horizontalInput, this.touchMoveX);
@@ -210,13 +238,23 @@ export class GameScene extends Phaser.Scene {
 
       powerUp.collect();
       const type = powerUp.getPowerUpType();
+      const bossActive = !!this.bossManager.getBoss()?.active;
+
       if (type === 'laser') {
+        // Laser always fires immediately
         this.fireLaserBlast();
+      } else if (type === 'extraLife') {
+        const gained = this.player.addLife();
+        new FloatingText(this, this.player.x, this.player.y - 40, gained ? '+1 LIFE ♥' : 'MAX LIVES!', '#ff5c8a');
+      } else if (bossActive && this.powerUpManager.hasStoredSlot()) {
+        // During boss fight — bank the power-up for strategic use
+        this.powerUpManager.tryStore(type);
+        new FloatingText(this, this.player.x, this.player.y - 40, `STORED: ${POWER_UP_LABELS[type]}`, '#ffe050');
       } else {
         this.powerUpManager.activate(type);
+        new FloatingText(this, this.player.x, this.player.y - 40, POWER_UP_LABELS[type], '#f5f7a6');
       }
       this.audioManager.playPowerUp();
-      new FloatingText(this, this.player.x, this.player.y - 40, POWER_UP_LABELS[type], '#f5f7a6');
       this.syncHud();
     });
   }
@@ -299,7 +337,7 @@ export class GameScene extends Phaser.Scene {
 
   private shouldFire(): boolean {
     const keyboardFiring = Boolean(this.fireKey?.isDown);
-    return this.player.canFire() && (keyboardFiring || this.shootHeld);
+    return this.player.canFire() && (keyboardFiring || this.shootHeld || this.player.isAutoFireEnabled());
   }
 
   private fireVolley(): void {
@@ -426,15 +464,94 @@ export class GameScene extends Phaser.Scene {
     if (streak >= 3) {
       this.comboText
         .setText(`×${this.comboManager.multiplier} COMBO (${streak})`)
-        .setAlpha(1)
-        .setX(this.player.x);
+        .setAlpha(1);
     } else {
       this.comboText.setAlpha(0);
     }
   }
 
-  private showBossWarning(): void {
-    const warn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, '⚠ BOSS INCOMING ⚠', {
+  private useStoredPowerUp(): void {
+    const type = this.powerUpManager.useStored();
+    if (!type) return;
+    if (type === 'laser') {
+      this.fireLaserBlast();
+    }
+    this.audioManager.playPowerUp();
+    new FloatingText(this, this.player.x, this.player.y - 40, `USED: ${POWER_UP_LABELS[type]}`, '#7cff6b');
+    this.syncHud();
+  }
+
+  private handleBossSpecial(ability: BossSpecialAbility): void {
+    switch (ability) {
+      case 'emp_pulse': {
+        this.powerUpManager.clearActive();
+        new FloatingText(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, '⚡ EMP PULSE!', '#44ddff');
+        this.cameras.main.flash(150, 0, 180, 255, false);
+        break;
+      }
+      case 'homing':
+      case 'omega': {
+        const boss = this.bossManager.getBoss();
+        if (boss) this.spawnHomingBullet(boss.x, boss.y + 36);
+        break;
+      }
+    }
+  }
+
+  private handleBossPhase2Transition(boss: Boss): void {
+    new FloatingText(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, '⚠ RAGE MODE ⚠', '#ff8844');
+    this.cameras.main.shake(200, 0.012);
+
+    const speedMul = this.difficultyManager.getEnemySpeedMultiplier();
+    switch (boss.getSpecialAbility()) {
+      case 'drone_spawn':
+        this.spawnEnemyAt(boss.x - 60, boss.y + 20, 'small', speedMul);
+        this.spawnEnemyAt(boss.x + 60, boss.y + 20, 'small', speedMul);
+        break;
+      case 'meteor_shower':
+        for (let i = 0; i < 5; i++) {
+          this.time.delayedCall(i * 250, () => {
+            this.spawnEnemyAt(Phaser.Math.Between(40, GAME_WIDTH - 40), boss.y - 20, 'small', speedMul);
+          });
+        }
+        break;
+      case 'summon':
+        this.spawnEnemyAt(boss.x - 90, boss.y + 60, 'medium', speedMul);
+        this.spawnEnemyAt(boss.x + 90, boss.y + 60, 'medium', speedMul);
+        break;
+    }
+  }
+
+  private spawnEnemyAt(x: number, y: number, type: EnemyType, speedMul: number): void {
+    const enemy = new Enemy(this, x, y, type, speedMul);
+    this.enemies.add(enemy);
+  }
+
+  private spawnHomingBullet(x: number, y: number): void {
+    let hb = this.enemyBullets.get(x, y) as EnemyBullet | null;
+    if (!hb) {
+      hb = new EnemyBullet(this, x, y);
+      this.enemyBullets.add(hb);
+    }
+    hb.fire(x, y, 0, 120);
+    hb.setTint(0xff00ff);
+    this.homingBullets.push(hb);
+  }
+
+  private updateHomingBullets(deltaMs: number): void {
+    this.homingBullets = this.homingBullets.filter(hb => hb.active);
+    for (const hb of this.homingBullets) {
+      const body = hb.body as Phaser.Physics.Arcade.Body;
+      const currentAngle = Math.atan2(body.velocity.y, body.velocity.x);
+      const targetAngle = Phaser.Math.Angle.Between(hb.x, hb.y, this.player.x, this.player.y);
+      const newAngle = Phaser.Math.Angle.RotateTo(currentAngle, targetAngle, 0.055 * deltaMs);
+      const speed = 160;
+      body.setVelocity(Math.cos(newAngle) * speed, Math.sin(newAngle) * speed);
+    }
+  }
+
+  private showBossWarning(name = 'BOSS', level = 1): void {
+    const warn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, `⚠ LV.${level} ${name.toUpperCase()} ⚠`, {
       color: '#ff3366',
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '36px',
@@ -532,6 +649,8 @@ export class GameScene extends Phaser.Scene {
       this.timerManager.getRemainingSeconds(),
       this.powerUpManager.getDisplayItems(),
       this.audioManager.isMuted(),
+      this.powerUpManager.getStored(),
+      this.player.isAutoFireEnabled(),
     );
   }
 

@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
-import { POWER_UP_SPEED, POWER_UP_TINTS, type PowerUpType } from '../utils/Constants';
+import { POWER_UP_SPEED, type PowerUpType } from '../utils/Constants';
 
 export class PowerUp extends Phaser.Physics.Arcade.Sprite {
   private powerUpType: PowerUpType = 'rapidFire';
 
   constructor(scene: Phaser.Scene, x = 0, y = 0) {
-    super(scene, x, y, 'powerup');
+    super(scene, x, y, 'powerup-rapidFire');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -22,7 +22,8 @@ export class PowerUp extends Phaser.Physics.Arcade.Sprite {
     body.reset(x, y);
     this.setActive(true);
     this.setVisible(true);
-    this.setTint(POWER_UP_TINTS[type]);
+    this.setTexture(`powerup-${type}`);
+    this.clearTint();
     this.setAngle(0);
     this.setVelocity(0, POWER_UP_SPEED);
   }

@@ -79,29 +79,54 @@ export class MenuScene extends Phaser.Scene {
     const theme = THEMES[Storage.getTheme()];
 
     // ── Parallax background ──────────────────────────────────────
-    this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg-far').setOrigin(0).setAlpha(0.5);
+    this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-nebula').setOrigin(0).setAlpha(0.88);
+    this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg-far').setOrigin(0).setAlpha(0.65);
     const bg = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint).setAlpha(0.9);
     this.tweens.add({ targets: bg, alpha: 0.75, duration: 2200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     // ── Title ────────────────────────────────────────────────────
-    // Glow layer behind
+    // Wide diffuse glow halo (largest, most transparent)
     this.add.text(GAME_WIDTH / 2, 58, 'SPACE DESTROYERS', {
-      fontFamily: FONT, fontSize: '44px', color: '#6cf3ff',
-      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 32, fill: true },
-    }).setOrigin(0.5).setAlpha(0.5);
+      fontFamily: FONT, fontSize: '36px', color: '#6cf3ff',
+      shadow: { offsetX: 0, offsetY: 0, color: '#00aaff', blur: 80, fill: true },
+    }).setOrigin(0.5).setAlpha(0.18);
+
+    // Mid glow layer
+    this.add.text(GAME_WIDTH / 2, 58, 'SPACE DESTROYERS', {
+      fontFamily: FONT, fontSize: '36px', color: '#6cf3ff',
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 36, fill: true },
+    }).setOrigin(0.5).setAlpha(0.45);
+
     // Sharp foreground
-    this.add.text(GAME_WIDTH / 2, 58, 'SPACE DESTROYERS', {
-      fontFamily: FONT, fontSize: '44px', color: '#e8faff',
-      stroke: '#09101f', strokeThickness: 6,
+    const titleFg = this.add.text(GAME_WIDTH / 2, 58, 'SPACE DESTROYERS', {
+      fontFamily: FONT, fontSize: '36px', color: '#ffffff',
+      stroke: '#1a9fff', strokeThickness: 6,
+      shadow: { offsetX: 0, offsetY: 3, color: '#001830', blur: 6, fill: true },
+    }).setOrigin(0.5);
+
+    // Shimmer tween: title pulses between bright white and ice blue
+    this.tweens.add({
+      targets: titleFg,
+      alpha: 0.88,
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Subtitle tagline
+    this.add.text(GAME_WIDTH / 2, 90, 'DEFEND  ·  SURVIVE  ·  CONQUER', {
+      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#4a8aaa',
+      letterSpacing: 4,
     }).setOrigin(0.5);
 
     // ── High score + level ───────────────────────────────────────
     const level = getPlayerLevel(highScore);
-    this.add.text(GAME_WIDTH / 2, 122, `HIGH  ${highScore.toLocaleString()}`, {
+    this.add.text(GAME_WIDTH / 2, 132, `HIGH  ${highScore.toLocaleString()}`, {
       fontFamily: FONT, fontSize: '18px', color: '#ffe050',
       shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 8, fill: true },
     }).setOrigin(0.5);
-    this.add.text(GAME_WIDTH / 2, 148, `LEVEL  ${level + 1}`, {
+    this.add.text(GAME_WIDTH / 2, 158, `LEVEL  ${level + 1}`, {
       fontFamily: FONT, fontSize: '13px', color: '#5588aa', letterSpacing: 3,
     }).setOrigin(0.5);
 
@@ -136,7 +161,7 @@ export class MenuScene extends Phaser.Scene {
     const refreshShip = (): void => {
       const cfg = SHIP_CONFIGS[selectedShipIdx];
       const locked = highScore < cfg.unlockScore;
-      shipImage.setTexture(cfg.texture).setTint(locked ? 0x334455 : 0xffffff).setAlpha(locked ? 0.4 : 1);
+      shipImage.setTexture(cfg.texture).setScale(cfg.previewScale).setTint(locked ? 0x334455 : 0xffffff).setAlpha(locked ? 0.4 : 1);
       shipNameText.setText(cfg.label).setColor(locked ? '#446677' : '#e8faff');
       shipDescText
         .setText(locked ? `🔒  Unlock at ${cfg.unlockScore.toLocaleString()} pts` : cfg.description)
