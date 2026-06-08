@@ -1,5 +1,5 @@
-import { POWER_UP_DROP_CHANCE, POWER_UP_DURATION_MS, POWER_UP_LABELS, POWER_UP_TYPES, type PowerUpType } from '../utils/Constants';
-import { chance, pickOne } from '../utils/Random';
+import { POWER_UP_DROP_CHANCE, POWER_UP_DURATION_MS, POWER_UP_LABELS, POWER_UP_TYPES, POWER_UP_WEIGHTS, type PowerUpType } from '../utils/Constants';
+import { chance, pickWeighted } from '../utils/Random';
 
 const MAX_STORED = 3;
 
@@ -20,6 +20,10 @@ export class PowerUpManager {
 
   activate(type: PowerUpType): void {
     this.activePowerUps.set(type, POWER_UP_DURATION_MS);
+  }
+
+  deactivate(type: PowerUpType): void {
+    this.activePowerUps.delete(type);
   }
 
   isActive(type: PowerUpType): boolean {
@@ -45,7 +49,7 @@ export class PowerUpManager {
   useStored(): PowerUpType | null {
     const type = this.storedPowerUps.shift();
     if (!type) return null;
-    if (type !== 'laser') this.activate(type);
+    if (type !== 'laser' && type !== 'nuke') this.activate(type);
     return type;
   }
 
@@ -67,6 +71,6 @@ export class PowerUpManager {
   }
 
   getRandomType(): PowerUpType {
-    return pickOne(POWER_UP_TYPES);
+    return pickWeighted(POWER_UP_TYPES.map(value => ({ value, weight: POWER_UP_WEIGHTS[value] })));
   }
 }

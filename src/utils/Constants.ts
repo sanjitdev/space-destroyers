@@ -13,7 +13,7 @@ export const POWER_UP_SPEED = 180;
 export const DIFFICULTY_STEP_MS = 10_000;
 
 export type EnemyType = 'small' | 'medium' | 'heavy';
-export type PowerUpType = 'rapidFire' | 'tripleShot' | 'shield' | 'scoreMultiplier' | 'slowTime' | 'laser' | 'extraLife';
+export type PowerUpType = 'rapidFire' | 'tripleShot' | 'shield' | 'scoreMultiplier' | 'slowTime' | 'laser' | 'extraLife' | 'nuke' | 'piercingShot' | 'magnetShield';
 
 export interface EnemyConfig {
   type: EnemyType;
@@ -31,7 +31,7 @@ export const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
   heavy:  { type: 'heavy',  texture: 'enemy-heavy',  health: 5, speed: 92,  points: 50, tint: 0xffffff, scale: 1 },
 };
 
-export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'shield', 'scoreMultiplier', 'slowTime', 'laser', 'extraLife'] as const satisfies readonly PowerUpType[];
+export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'shield', 'scoreMultiplier', 'slowTime', 'laser', 'extraLife', 'nuke', 'piercingShot', 'magnetShield'] as const satisfies readonly PowerUpType[];
 
 export const POWER_UP_LABELS: Record<PowerUpType, string> = {
   rapidFire: 'Rapid Fire',
@@ -41,6 +41,9 @@ export const POWER_UP_LABELS: Record<PowerUpType, string> = {
   slowTime: 'Slow Time',
   laser: 'MEGA LASER',
   extraLife: '+1 Life',
+  nuke: 'NUKE',
+  piercingShot: 'Piercing Shot',
+  magnetShield: 'Magnet Shield',
 };
 
 export const POWER_UP_TINTS: Record<PowerUpType, number> = {
@@ -51,6 +54,23 @@ export const POWER_UP_TINTS: Record<PowerUpType, number> = {
   slowTime: 0xc492ff,
   laser: 0xffffff,
   extraLife: 0xff5c8a,
+  nuke: 0xff6600,
+  piercingShot: 0xffeedd,
+  magnetShield: 0x00ddff,
+};
+
+// Drop weight for each power-up (higher = more common)
+export const POWER_UP_WEIGHTS: Record<PowerUpType, number> = {
+  extraLife:       20,
+  rapidFire:       16,
+  tripleShot:      14,
+  shield:          12,
+  magnetShield:    10,
+  scoreMultiplier: 10,
+  piercingShot:     8,
+  slowTime:         6,
+  laser:            3,
+  nuke:             2,
 };
 
 // ── Game mode ──────────────────────────────────────────────────────────────

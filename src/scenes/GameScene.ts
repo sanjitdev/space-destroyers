@@ -178,6 +178,16 @@ export class GameScene extends Phaser.Scene {
       (child as Enemy).applyMovementFactor(slowFactor);
     }
 
+    // Magnet shield — destroy nearby enemy bullets each frame
+    if (this.powerUpManager.isActive('magnetShield')) {
+      for (const child of this.enemyBullets.getChildren()) {
+        const eb = child as EnemyBullet;
+        if (eb.active && Phaser.Math.Distance.Between(eb.x, eb.y, this.player.x, this.player.y) < 100) {
+          eb.deactivate();
+        }
+      }
+    }
+
     if (this.shouldFire()) {
       this.fireVolley();
     }
@@ -249,13 +259,13 @@ export class GameScene extends Phaser.Scene {
       const bossActive = !!this.bossManager.getBoss()?.active;
 
       if (type === 'laser') {
-        // Laser always fires immediately
         this.fireLaserBlast();
+      } else if (type === 'nuke') {
+        this.triggerNuke();
       } else if (type === 'extraLife') {
         const gained = this.player.addLife();
         new FloatingText(this, this.player.x, this.player.y - 40, gained ? '+1 LIFE ♥' : 'MAX LIVES!', '#ff5c8a');
       } else if (bossActive && this.powerUpManager.hasStoredSlot()) {
-        // During boss fight — bank the power-up for strategic use
         this.powerUpManager.tryStore(type);
         new FloatingText(this, this.player.x, this.player.y - 40, `STORED: ${POWER_UP_LABELS[type]}`, '#ffe050');
       } else {
@@ -268,14 +278,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handlePlayerDamage(): void {
-    const damaged = this.player.takeDamage(this.powerUpManager.isActive('shield'));
-    if (damaged) {
-      this.comboManager.onDamage();
-      this.statsManager.recordDamage();
-      this.audioManager.playDamage();
-      this.cameras.main.shake(140, 0.006);
-      new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
+    const hasShield = this.powerUpManager.isActive('shield');
+    const hasMagnetShield = this.powerUpManager.isActive('magnetShield');
+    const damaged = this.player.takeDamage(hasShield || hasMagnetShield);
+    if (!damaged) {
+      if (hasShield) {
+        // Single-use shield consumed on first hit
+        this.powerUpManager.deactivate('shield');
+        new FloatingText(this, this.player.x, this.player.y - 40, 'SHIELD BLOCKED!', '#4dd2ff');
+        this.cameras.main.flash(80, 0, 160, 255, false);
+      }
+      return;
     }
+    this.comboManager.onDamage();
+    this.statsManager.recordDamage();
+    this.audioManager.playDamage();
+    this.cameras.main.shake(140, 0.006);
+    new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
     if (this.player.isOutOfLives()) {
       this.finishGame('death');
     }
@@ -427,6 +446,27 @@ export class GameScene extends Phaser.Scene {
     powerUp.configure(type, x, y);
   }
 
+  private triggerNuke(): void {
+    const children = [...this.enemies.getChildren()];
+    let killCount = 0;
+    for (const child of children) {
+      const enemy = child as Enemy;
+      if (!enemy.active) continue;
+      killCount++;
+      const pts = this.scoreManager.add(enemy.getPoints(), this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
+      this.comboManager.onKill();
+      this.statsManager.recordKill();
+      this.createExplosion(enemy.x, enemy.y, enemy.getTintColor());
+      new FloatingText(this, enemy.x, enemy.y - 10, `+${pts}`, '#ff8844');
+      enemy.destroy();
+    }
+    this.cameras.main.shake(350, 0.020);
+    this.cameras.main.flash(220, 255, 100, 0, false);
+    if (killCount > 0) {
+      new FloatingText(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, `☢ NUKE! ${killCount} KILLS`, '#ff8844');
+    }
+  }
+
   private destroyBoss(boss: Boss): void {
     const bossLevel = boss.getLevel();
     const awarded = this.scoreManager.add(500, this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
@@ -541,6 +581,8 @@ export class GameScene extends Phaser.Scene {
     if (!type) return;
     if (type === 'laser') {
       this.fireLaserBlast();
+    } else if (type === 'nuke') {
+      this.triggerNuke();
     }
     this.audioManager.playPowerUp();
     new FloatingText(this, this.player.x, this.player.y - 40, `USED: ${POWER_UP_LABELS[type]}`, '#7cff6b');

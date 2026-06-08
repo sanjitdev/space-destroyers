@@ -276,6 +276,51 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('powerup-extraLife', 28, 28);
     graphics.clear();
 
+    // nuke — starburst: filled circle + 6 pointed spikes
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(14, 14, 5);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const ax = 14 + Math.cos(a - 0.30) * 7;
+      const ay = 14 + Math.sin(a - 0.30) * 7;
+      const bx = 14 + Math.cos(a) * 13;
+      const by = 14 + Math.sin(a) * 13;
+      const cx = 14 + Math.cos(a + 0.30) * 7;
+      const cy = 14 + Math.sin(a + 0.30) * 7;
+      graphics.fillTriangle(ax, ay, bx, by, cx, cy);
+    }
+    graphics.generateTexture('powerup-nuke', 28, 28);
+    graphics.clear();
+
+    // piercingShot — upward arrow with side speed-slash lines
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillTriangle(14, 2, 7, 12, 21, 12); // arrowhead
+    graphics.fillRect(12, 12, 4, 14);             // shaft
+    graphics.fillRect(4, 9,  5, 2);               // left slash
+    graphics.fillRect(4, 14, 4, 2);               // left slash 2
+    graphics.fillRect(19, 9,  5, 2);              // right slash
+    graphics.fillRect(20, 14, 4, 2);              // right slash 2
+    graphics.generateTexture('powerup-piercingShot', 28, 28);
+    graphics.clear();
+
+    // magnetShield — horseshoe magnet (U-shape with pole tips)
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillRoundedRect(5, 3, 7, 20, 2);   // left pole
+    graphics.fillRoundedRect(16, 3, 7, 20, 2);  // right pole
+    graphics.fillRoundedRect(5, 3, 18, 7, 3);   // connecting top bar
+    // Dark hollow inside (depth)
+    graphics.fillStyle(0x000000, 0.75);
+    graphics.fillRect(8, 8, 12, 12);            // inner void
+    // Tip ends (distinct pole blocks)
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillRect(5, 21, 7, 4);             // left tip
+    graphics.fillRect(16, 21, 7, 4);            // right tip
+    // Small field dots at bottom of poles
+    graphics.fillCircle(8, 27, 2);
+    graphics.fillCircle(20, 27, 2);
+    graphics.generateTexture('powerup-magnetShield', 28, 28);
+    graphics.clear();
+
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(3, 3, 3);
     graphics.generateTexture('particle', 6, 6);

@@ -265,7 +265,7 @@ export class MenuScene extends Phaser.Scene {
   private showPowerUpOverlay(): void {
     const W = GAME_WIDTH;
     const panelW = 430;
-    const panelH = 508;
+    const panelH = 666;
     const panelX = (W - panelW) / 2;
     const panelY = (GAME_HEIGHT - panelH) / 2;
 
@@ -298,13 +298,16 @@ export class MenuScene extends Phaser.Scene {
 
     // Power-up rows
     const rows = [
+      { key: 'powerup-extraLife',       label: '+1 Life',        desc: 'Gain one life (max 5)' },
       { key: 'powerup-rapidFire',       label: 'Rapid Fire',     desc: 'Halves fire cooldown for 10 s' },
       { key: 'powerup-tripleShot',      label: 'Triple Shot',    desc: '3 bullets per shot for 10 s' },
-      { key: 'powerup-shield',          label: 'Shield',         desc: 'Absorbs one hit' },
+      { key: 'powerup-shield',          label: 'Shield',         desc: 'Absorbs one hit (single use)' },
+      { key: 'powerup-magnetShield',    label: 'Magnet Shield',  desc: 'Absorbs nearby bullets & hits for 10 s' },
       { key: 'powerup-scoreMultiplier', label: '2× Score',       desc: 'Doubles kill points for 10 s' },
+      { key: 'powerup-piercingShot',    label: 'Piercing Shot',  desc: 'Bullets pierce through enemies for 10 s' },
       { key: 'powerup-slowTime',        label: 'Slow Time',      desc: 'Halves all enemy speed for 10 s' },
       { key: 'powerup-laser',           label: 'Mega Laser',     desc: 'Fires an instant full-width beam' },
-      { key: 'powerup-extraLife',       label: '+1 Life',        desc: 'Gain one life (max 5)' },
+      { key: 'powerup-nuke',            label: 'Nuke',           desc: 'Destroys every enemy on screen instantly' },
     ] as const;
 
     const startY = panelY + 58;
