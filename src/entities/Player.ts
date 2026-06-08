@@ -6,15 +6,20 @@ import {
   PLAYER_SPEED,
   POWER_UP_TINTS,
   type PowerUpType,
+  type ShipConfig,
 } from '../utils/Constants';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private lives = PLAYER_LIVES;
   private fireCooldownMs = 0;
   private invulnerabilityMs = 0;
+  private readonly shipSpeed: number;
+  private readonly shipCooldownMod: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'player');
+  constructor(scene: Phaser.Scene, x: number, y: number, ship: ShipConfig) {
+    super(scene, x, y, ship.texture);
+    this.shipSpeed = PLAYER_SPEED * ship.speedMod;
+    this.shipCooldownMod = ship.cooldownMod;
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -29,10 +34,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnerabilityMs = Math.max(0, this.invulnerabilityMs - deltaMs);
 
     if (touchTargetX !== null) {
-      const desiredVelocity = Phaser.Math.Clamp((touchTargetX - this.x) * 7, -PLAYER_SPEED, PLAYER_SPEED);
+      const desiredVelocity = Phaser.Math.Clamp((touchTargetX - this.x) * 7, -this.shipSpeed, this.shipSpeed);
       this.setVelocityX(desiredVelocity);
     } else {
-      this.setVelocityX(horizontalInput * PLAYER_SPEED);
+      this.setVelocityX(horizontalInput * this.shipSpeed);
     }
 
     if (this.invulnerabilityMs > 0) {
@@ -47,7 +52,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   consumeFireCooldown(rapidFire: boolean): void {
-    this.fireCooldownMs = rapidFire ? PLAYER_FIRE_COOLDOWN_MS / 2 : PLAYER_FIRE_COOLDOWN_MS;
+    const base = PLAYER_FIRE_COOLDOWN_MS * this.shipCooldownMod;
+    this.fireCooldownMs = rapidFire ? base / 2 : base;
   }
 
   takeDamage(shielded: boolean): boolean {

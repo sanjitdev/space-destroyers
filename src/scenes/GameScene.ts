@@ -11,7 +11,8 @@ import { ScoreManager } from '../managers/ScoreManager';
 import { TimerManager } from '../managers/TimerManager';
 import { FloatingText } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
-import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS } from '../utils/Constants';
+import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type GameMode } from '../utils/Constants';
+import { Storage } from '../utils/Storage';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -33,13 +34,24 @@ export class GameScene extends Phaser.Scene {
   private touchMoveX: number | null = null;
   private shootHeld = false;
   private gameFinished = false;
+  private mode: GameMode = 'timed';
+  private themeBulletTint = 0xffffff;
 
   constructor() {
     super('GameScene');
   }
 
-  create(): void {
-    this.background = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(0x78a6ff);
+  create(data?: { mode?: GameMode }): void {
+    this.gameFinished = false;
+    this.movePointerId = null;
+    this.firePointerId = null;
+    this.touchMoveX = null;
+    this.shootHeld = false;
+    this.mode = data?.mode ?? 'timed';
+    const theme = THEMES[Storage.getTheme()];
+    this.themeBulletTint = theme.bulletTint;
+
+    this.background = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint);
 
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
     this.input.addPointer(2);
@@ -48,9 +60,10 @@ export class GameScene extends Phaser.Scene {
     this.enemies = this.physics.add.group({ runChildUpdate: true });
     this.powerUps = this.physics.add.group({ classType: PowerUp, maxSize: 16, runChildUpdate: true });
 
-    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 72);
+    const ship = SHIP_CONFIGS[Storage.getSelectedShipIndex()];
+    this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 72, ship);
     this.scoreManager = new ScoreManager();
-    this.timerManager = new TimerManager();
+    this.timerManager = new TimerManager(undefined, this.mode === 'infinite');
     this.difficultyManager = new DifficultyManager();
     this.powerUpManager = new PowerUpManager();
     this.enemySpawnManager = new EnemySpawnManager(this, this.enemies, this.difficultyManager);
@@ -96,7 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.syncHud();
 
     if (this.timerManager.isComplete()) {
-      this.finishGame();
+      this.finishGame('time');
     }
   }
 
@@ -136,7 +149,7 @@ export class GameScene extends Phaser.Scene {
       }
 
       if (this.player.isOutOfLives()) {
-        this.finishGame();
+        this.finishGame('death');
       }
     });
 
@@ -148,7 +161,11 @@ export class GameScene extends Phaser.Scene {
 
       powerUp.collect();
       const type = powerUp.getPowerUpType();
-      this.powerUpManager.activate(type);
+      if (type === 'laser') {
+        this.fireLaserBlast();
+      } else {
+        this.powerUpManager.activate(type);
+      }
       this.audioManager.playPowerUp();
       new FloatingText(this, this.player.x, this.player.y - 40, POWER_UP_LABELS[type], '#f5f7a6');
       this.syncHud();
@@ -238,6 +255,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     bullet.fire(x, y, velocityX);
+    bullet.setTint(this.themeBulletTint);
   }
 
   private destroyEnemy(enemy: Enemy): void {
@@ -283,6 +301,66 @@ export class GameScene extends Phaser.Scene {
     powerUp.configure(type, x, y);
   }
 
+  private fireLaserBlast(): void {
+    const beamX = this.player.x;
+    const beamWidth = 44;
+    const totalHeight = this.player.y + 32;
+    const travelDuration = 600;
+
+    // Three layers: wide glow → solid beam → bright core
+    const glow = this.add
+      .rectangle(beamX, this.player.y, beamWidth * 2.8, totalHeight, 0x88ccff, 0.28)
+      .setDepth(14).setBlendMode(Phaser.BlendModes.ADD).setOrigin(0.5, 1).setScale(1, 0);
+    const beam = this.add
+      .rectangle(beamX, this.player.y, beamWidth, totalHeight, 0xffffff, 0.92)
+      .setDepth(15).setBlendMode(Phaser.BlendModes.ADD).setOrigin(0.5, 1).setScale(1, 0);
+    const core = this.add
+      .rectangle(beamX, this.player.y, beamWidth * 0.38, totalHeight, 0xddfffe, 1)
+      .setDepth(16).setBlendMode(Phaser.BlendModes.ADD).setOrigin(0.5, 1).setScale(1, 0);
+
+    this.audioManager.playLaser();
+    this.cameras.main.shake(300, 0.009);
+    this.cameras.main.flash(80, 180, 220, 255, false);
+
+    const hitEnemies = new Set<Enemy>();
+
+    this.tweens.add({
+      targets: [glow, beam, core],
+      scaleY: 1,
+      duration: travelDuration,
+      ease: 'Sine.easeIn',
+      onUpdate: () => {
+        // Current top edge of the beam as it sweeps upward
+        const beamTop = this.player.y - totalHeight * beam.scaleY;
+        for (const child of this.enemies.getChildren()) {
+          const enemy = child as Enemy;
+          if (!enemy.active || hitEnemies.has(enemy)) continue;
+          if (enemy.y >= beamTop && Math.abs(enemy.x - beamX) < beamWidth + 14) {
+            hitEnemies.add(enemy);
+            const awarded = this.scoreManager.add(
+              enemy.getPoints(),
+              this.powerUpManager.isActive('scoreMultiplier'),
+            );
+            this.createExplosion(enemy.x, enemy.y, enemy.getTintColor());
+            new FloatingText(this, enemy.x, enemy.y, `+${awarded}`, '#ffffff');
+            enemy.destroy();
+          }
+        }
+      },
+      onComplete: () => {
+        this.cameras.main.shake(200, 0.013);
+        this.tweens.add({
+          targets: [glow, beam, core],
+          alpha: 0,
+          scaleX: 3,
+          duration: 320,
+          ease: 'Cubic.easeOut',
+          onComplete: () => { glow.destroy(); beam.destroy(); core.destroy(); },
+        });
+      },
+    });
+  }
+
   private isFireArea(x: number, y: number): boolean {
     return Phaser.Math.Distance.Between(x, y, GAME_WIDTH - 68, GAME_HEIGHT - 78) <= 54;
   }
@@ -303,7 +381,7 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  private finishGame(): void {
+  private finishGame(reason: 'time' | 'death' = 'death'): void {
     if (this.gameFinished) {
       return;
     }
@@ -313,6 +391,8 @@ export class GameScene extends Phaser.Scene {
     this.scene.start('GameOverScene', {
       score: this.scoreManager.getScore(),
       highScore: this.scoreManager.getHighScore(),
+      mode: this.mode,
+      reason,
     });
   }
 }

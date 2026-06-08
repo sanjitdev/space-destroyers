@@ -70,6 +70,53 @@ export class BootScene extends Phaser.Scene {
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(3, 3, 3);
     graphics.generateTexture('particle', 6, 6);
+    graphics.clear();
+
+    // ── Viper — slender, fast (orange-red, 1.2× speed) ────────────
+    graphics.fillStyle(0xff6030, 1);
+    graphics.fillTriangle(18, 0, 6, 36, 30, 36);
+    graphics.fillStyle(0xffaa44, 1);
+    graphics.fillRect(17, 8, 2, 22);
+    graphics.generateTexture('ship-viper', 36, 36);
+    graphics.clear();
+
+    // ── Nova — wide hull, rapid fire (cyan, 0.65× cooldown) ───────
+    graphics.fillStyle(0x18c8ff, 1);
+    graphics.fillTriangle(18, 0, 0, 34, 36, 34);
+    graphics.fillStyle(0x0a3050, 1);
+    graphics.fillRect(0, 28, 12, 8);
+    graphics.fillRect(24, 28, 12, 8);
+    graphics.fillStyle(0xffffff, 0.65);
+    graphics.fillEllipse(18, 14, 10, 7);
+    graphics.generateTexture('ship-nova', 36, 36);
+    graphics.clear();
+
+    // ── Phantom — stealth kite, agile (purple, 0.8× cooldown) ─────
+    graphics.fillStyle(0xaa60ff, 1);
+    graphics.fillPoints([
+      new Phaser.Math.Vector2(18, 0),
+      new Phaser.Math.Vector2(36, 18),
+      new Phaser.Math.Vector2(28, 36),
+      new Phaser.Math.Vector2(8, 36),
+      new Phaser.Math.Vector2(0, 18),
+    ], true);
+    graphics.fillStyle(0xddaaff, 0.55);
+    graphics.fillRect(16, 10, 4, 16);
+    graphics.generateTexture('ship-phantom', 36, 36);
+    graphics.clear();
+
+    // ── Titan — heavy bruiser (gold, 0.55× cooldown) ──────────────
+    graphics.fillStyle(0xffcc22, 1);
+    graphics.fillTriangle(18, 0, 8, 12, 28, 12);
+    graphics.fillRect(6, 10, 24, 26);
+    graphics.fillRect(0, 16, 8, 20);
+    graphics.fillRect(28, 16, 8, 20);
+    graphics.fillStyle(0xff9900, 1);
+    graphics.fillRect(0, 16, 2, 20);
+    graphics.fillRect(34, 16, 2, 20);
+    graphics.fillStyle(0x0a2040, 0.65);
+    graphics.fillRect(14, 12, 8, 12);
+    graphics.generateTexture('ship-titan', 36, 36);
     graphics.destroy();
 
     this.scene.start('MenuScene');

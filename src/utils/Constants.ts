@@ -12,7 +12,7 @@ export const POWER_UP_SPEED = 180;
 export const DIFFICULTY_STEP_MS = 10_000;
 
 export type EnemyType = 'small' | 'medium' | 'heavy';
-export type PowerUpType = 'rapidFire' | 'tripleShot' | 'shield' | 'scoreMultiplier' | 'slowTime';
+export type PowerUpType = 'rapidFire' | 'tripleShot' | 'shield' | 'scoreMultiplier' | 'slowTime' | 'laser';
 
 export interface EnemyConfig {
   type: EnemyType;
@@ -30,7 +30,7 @@ export const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
   heavy: { type: 'heavy', texture: 'enemy-heavy', health: 5, speed: 92, points: 50, tint: 0xb084ff, scale: 1.16 },
 };
 
-export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'shield', 'scoreMultiplier', 'slowTime'] as const satisfies readonly PowerUpType[];
+export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'shield', 'scoreMultiplier', 'slowTime', 'laser'] as const satisfies readonly PowerUpType[];
 
 export const POWER_UP_LABELS: Record<PowerUpType, string> = {
   rapidFire: 'Rapid Fire',
@@ -38,6 +38,7 @@ export const POWER_UP_LABELS: Record<PowerUpType, string> = {
   shield: 'Shield',
   scoreMultiplier: '2x Score',
   slowTime: 'Slow Time',
+  laser: 'MEGA LASER',
 };
 
 export const POWER_UP_TINTS: Record<PowerUpType, number> = {
@@ -46,4 +47,50 @@ export const POWER_UP_TINTS: Record<PowerUpType, number> = {
   shield: 0x4dd2ff,
   scoreMultiplier: 0xfff275,
   slowTime: 0xc492ff,
+  laser: 0xffffff,
 };
+
+// ── Game mode ──────────────────────────────────────────────────────────────
+export type GameMode = 'timed' | 'infinite';
+
+// ── Theme system ───────────────────────────────────────────────────────────
+export type ThemeId = 'blue' | 'purple' | 'red' | 'green' | 'gold';
+
+export interface ThemeConfig {
+  id: ThemeId;
+  label: string;
+  bgTint: number;
+  bulletTint: number;
+}
+
+export const THEMES: Record<ThemeId, ThemeConfig> = {
+  blue:   { id: 'blue',   label: 'Blue',   bgTint: 0x78a6ff, bulletTint: 0x57e2e5 },
+  purple: { id: 'purple', label: 'Purple', bgTint: 0xb088ff, bulletTint: 0xd0a0ff },
+  red:    { id: 'red',    label: 'Red',    bgTint: 0xff9080, bulletTint: 0xff6699 },
+  green:  { id: 'green',  label: 'Green',  bgTint: 0x80ffa0, bulletTint: 0x90ff70 },
+  gold:   { id: 'gold',   label: 'Gold',   bgTint: 0xffd070, bulletTint: 0xffe060 },
+};
+
+export const THEME_IDS = ['blue', 'purple', 'red', 'green', 'gold'] as const satisfies readonly ThemeId[];
+
+// ── Ship system ────────────────────────────────────────────────────────────
+export interface ShipConfig {
+  id: string;
+  label: string;
+  texture: string;
+  unlockScore: number;
+  speedMod: number;
+  cooldownMod: number;
+  description: string;
+}
+
+export const SHIP_CONFIGS: ShipConfig[] = [
+  { id: 'falcon',  label: 'Falcon',  texture: 'player',       unlockScore: 0,    speedMod: 1.00, cooldownMod: 1.00, description: 'Balanced' },
+  { id: 'viper',   label: 'Viper',   texture: 'ship-viper',   unlockScore: 500,  speedMod: 1.20, cooldownMod: 1.10, description: 'Fast · Standard fire' },
+  { id: 'nova',    label: 'Nova',    texture: 'ship-nova',    unlockScore: 1500, speedMod: 0.90, cooldownMod: 0.65, description: 'Rapid fire · Slower' },
+  { id: 'phantom', label: 'Phantom', texture: 'ship-phantom', unlockScore: 3000, speedMod: 1.15, cooldownMod: 0.80, description: 'Agile · Fast fire' },
+  { id: 'titan',   label: 'Titan',   texture: 'ship-titan',   unlockScore: 6000, speedMod: 0.85, cooldownMod: 0.55, description: 'Heavy · Rapid fire' },
+];
+
+export const getPlayerLevel = (highScore: number): number =>
+  SHIP_CONFIGS.filter(s => highScore >= s.unlockScore).length - 1;

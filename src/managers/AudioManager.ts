@@ -59,6 +59,11 @@ export class AudioManager {
     this.playTone(180, 0.14, 'square', 0.05, 110);
   }
 
+  playLaser(): void {
+    this.playTone(180, 0.65, 'sawtooth', 0.22, 1800);
+    this.playTone(360, 0.50, 'square', 0.09, 2200);
+  }
+
   destroy(): void {
     this.scene.input.off('pointerdown', this.unlock, this);
     this.scene.input.keyboard?.off('keydown', this.unlock, this);

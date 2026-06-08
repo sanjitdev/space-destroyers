@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../utils/Constants';
+import { GAME_HEIGHT, GAME_WIDTH, THEMES, type GameMode } from '../utils/Constants';
+import { Storage } from '../utils/Storage';
 
 interface GameOverData {
   score: number;
   highScore: number;
+  mode: GameMode;
+  reason: 'time' | 'death';
 }
 
 export class GameOverScene extends Phaser.Scene {
@@ -12,18 +15,19 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   create(data: GameOverData): void {
-    this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(0xaa88ff);
+    const theme = THEMES[Storage.getTheme()];
+    this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint);
 
-    this.add.text(GAME_WIDTH / 2, 180, 'GAME OVER', {
-      color: '#ff6b8a',
+    const headlineText = data.reason === 'time' ? 'TIME\'S UP!' : 'GAME OVER';
+    this.add.text(GAME_WIDTH / 2, 180, headlineText, {
+      color: data.reason === 'time' ? '#7cff6b' : '#ff6b8a',
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '52px',
       stroke: '#09101f',
       strokeThickness: 8,
     }).setOrigin(0.5);
 
-    this.add.text(GAME_WIDTH / 2, 320, `Final Score: ${data.score}
-High Score: ${data.highScore}`, {
+    this.add.text(GAME_WIDTH / 2, 320, `Final Score: ${data.score}\nHigh Score: ${data.highScore}`, {
       align: 'center',
       color: '#f4f7ff',
       fontFamily: 'Arial Black, sans-serif',
@@ -44,12 +48,28 @@ High Score: ${data.highScore}`, {
       strokeThickness: 6,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
+    const menuBtn = this.add.rectangle(GAME_WIDTH / 2, 588, 240, 52, 0x0a1326, 0.9)
+      .setStrokeStyle(2, 0x445577)
+      .setInteractive({ useHandCursor: true });
+    const menuLabel = this.add.text(GAME_WIDTH / 2, 588, 'MAIN MENU', {
+      color: '#aaccff',
+      fontFamily: 'Arial Black, sans-serif',
+      fontSize: '22px',
+      stroke: '#09101f',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
     const playAgain = (): void => {
-      this.scene.start('GameScene');
+      this.scene.start('GameScene', { mode: data.mode });
+    };
+    const goMenu = (): void => {
+      this.scene.start('MenuScene');
     };
 
     button.on('pointerdown', playAgain);
     label.on('pointerdown', playAgain);
+    menuBtn.on('pointerdown', goMenu);
+    menuLabel.on('pointerdown', goMenu);
     this.input.keyboard?.once('keydown-SPACE', playAgain);
   }
 }

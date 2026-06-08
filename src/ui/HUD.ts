@@ -39,7 +39,7 @@ export class HUD extends Phaser.GameObjects.Container {
     this.scoreText.setText(`Score: ${score}`);
     this.highScoreText.setText(`High: ${highScore}`);
     this.livesText.setText(`Lives: ${lives}`);
-    this.timeText.setText(`Time: ${timeRemaining}`);
+    this.timeText.setText(timeRemaining < 0 ? 'Time: ∞' : `Time: ${timeRemaining}`);
     this.powerUpText.setText(`Power-Ups: ${powerUps.length > 0 ? powerUps.join(' • ') : 'None'}`);
     this.muteText.setText(muted ? '🔇' : '🔊');
   }

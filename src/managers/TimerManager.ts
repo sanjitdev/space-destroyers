@@ -1,31 +1,36 @@
 import { GAME_DURATION_MS } from '../utils/Constants';
 
 export class TimerManager {
-  private readonly durationMs: number;
   private remainingMs: number;
+  private elapsedMs = 0;
+  private readonly infinite: boolean;
 
-  constructor(durationMs = GAME_DURATION_MS) {
-    this.durationMs = durationMs;
+  constructor(durationMs = GAME_DURATION_MS, infinite = false) {
+    this.infinite = infinite;
     this.remainingMs = durationMs;
   }
 
   update(deltaMs: number): void {
-    this.remainingMs = Math.max(0, this.remainingMs - deltaMs);
+    this.elapsedMs += deltaMs;
+    if (!this.infinite) {
+      this.remainingMs = Math.max(0, this.remainingMs - deltaMs);
+    }
   }
 
   getRemainingMs(): number {
     return this.remainingMs;
   }
 
+  /** Returns -1 in infinite mode; otherwise seconds remaining (ceiling). */
   getRemainingSeconds(): number {
-    return Math.ceil(this.remainingMs / 1000);
+    return this.infinite ? -1 : Math.ceil(this.remainingMs / 1000);
   }
 
   getElapsedMs(): number {
-    return this.durationMs - this.remainingMs;
+    return this.elapsedMs;
   }
 
   isComplete(): boolean {
-    return this.remainingMs <= 0;
+    return !this.infinite && this.remainingMs <= 0;
   }
 }
