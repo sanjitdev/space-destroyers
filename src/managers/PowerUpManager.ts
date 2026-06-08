@@ -73,4 +73,11 @@ export class PowerUpManager {
   getRandomType(): PowerUpType {
     return pickWeighted(POWER_UP_TYPES.map(value => ({ value, weight: POWER_UP_WEIGHTS[value] })));
   }
+
+  /** Returns active types with less than `thresholdMs` remaining. */
+  getExpiringTypes(thresholdMs: number): PowerUpType[] {
+    return Array.from(this.activePowerUps.entries())
+      .filter(([, ms]) => ms <= thresholdMs)
+      .map(([type]) => type);
+  }
 }

@@ -109,6 +109,15 @@ export class GameOverScene extends Phaser.Scene {
       );
     });
 
+    // ── Career stats strip ────────────────────────────────────────
+    const careerY = 498;
+    const careerPanel = this.add.rectangle(GAME_WIDTH / 2, careerY, GAME_WIDTH - 40, 36, 0x010810, 0.80)
+      .setStrokeStyle(1, 0x0a1e38, 0.7).setAlpha(0);
+    const careerText = this.add.text(GAME_WIDTH / 2, careerY,
+      `CAREER  ·  ${Storage.getGamesPlayed()} runs  ·  ${Storage.getTotalKills().toLocaleString()} kills  ·  ${Storage.getTotalBossesKilled()} bosses`, {
+      fontFamily: FONT, fontSize: '11px', color: '#2c5070', letterSpacing: 1,
+    }).setOrigin(0.5).setAlpha(0);
+
     // ── Buttons ──────────────────────────────────────────────────
     const playAgain = (): void => { this.scene.start('GameScene', { mode: data.mode }); };
     const goMenu    = (): void => { this.scene.start('MenuScene'); };
@@ -159,8 +168,8 @@ export class GameOverScene extends Phaser.Scene {
       return [gfx, label];
     };
 
-    const [btn1Gfx, btn1Label] = makeBtn(550, 280, 58, 0x08192e, 0x6cf3ff, 'PLAY AGAIN', '#6cf3ff', '24px', playAgain);
-    const [btn2Gfx, btn2Label] = makeBtn(622, 260, 46, 0x060c1e, 0x2a6090, 'MAIN MENU',  '#4a88b0', '20px', goMenu);
+    const [btn1Gfx, btn1Label] = makeBtn(570, 280, 58, 0x08192e, 0x6cf3ff, 'PLAY AGAIN', '#6cf3ff', '24px', playAgain);
+    const [btn2Gfx, btn2Label] = makeBtn(642, 260, 46, 0x060c1e, 0x2a6090, 'MAIN MENU',  '#4a88b0', '20px', goMenu);
 
     this.input.keyboard?.once('keydown-SPACE', playAgain);
 
@@ -177,8 +186,9 @@ export class GameOverScene extends Phaser.Scene {
 
     fadeIn([scorePanel, scoreText, highText], 500, true);
     fadeIn([statPanel, ...statTextObjs], 650, true);
-    fadeIn([btn1Gfx, btn1Label], 820, true);
-    fadeIn([btn2Gfx, btn2Label], 920, true);
+    fadeIn([careerPanel, careerText], 760, true);
+    fadeIn([btn1Gfx, btn1Label], 860, true);
+    fadeIn([btn2Gfx, btn2Label], 960, true);
   }
 }
 

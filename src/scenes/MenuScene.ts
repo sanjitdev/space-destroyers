@@ -13,62 +13,6 @@ import { Storage } from '../utils/Storage';
 const FONT = 'Arial Black, sans-serif';
 const PANEL = 0x04101e;
 
-/** Rounded, glossy button with ambient glow and press animation. */
-function makeBtn(
-  scene: Phaser.Scene,
-  x: number, y: number, w: number, h: number,
-  fillHex: number, strokeHex: number,
-  text: string, textColor: string,
-  onPress: () => void,
-): void {
-  const r = 14;
-  const gfx = scene.add.graphics().setPosition(x, y);
-
-  const draw = (glow: number, fill: number): void => {
-    gfx.clear();
-    // Ambient outer glow
-    gfx.fillStyle(strokeHex, 0.10 * glow);
-    gfx.fillRoundedRect(-w / 2 - 9, -h / 2 - 7, w + 18, h + 14, r + 9);
-    // Main fill
-    gfx.fillStyle(fillHex, fill);
-    gfx.fillRoundedRect(-w / 2, -h / 2, w, h, r);
-    // Bottom shadow strip (3-D depth)
-    gfx.fillStyle(0x000000, 0.22);
-    gfx.fillRoundedRect(-w / 2 + 3, h / 2 - 8, w - 6, 7, { tl: 0, tr: 0, bl: r - 3, br: r - 3 });
-    // Top gloss strip
-    gfx.fillStyle(0xffffff, 0.10);
-    gfx.fillRoundedRect(-w / 2 + 3, -h / 2 + 3, w - 6, h * 0.40, { tl: r - 3, tr: r - 3, bl: 0, br: 0 });
-    // Outer border
-    gfx.lineStyle(2, strokeHex, 0.82 * glow);
-    gfx.strokeRoundedRect(-w / 2, -h / 2, w, h, r);
-    // Inner border (emboss)
-    gfx.lineStyle(1, strokeHex, 0.22 * glow);
-    gfx.strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r - 2);
-  };
-
-  draw(0.85, 0.90);
-
-  const label = scene.add.text(x, y, text, {
-    fontFamily: FONT, fontSize: '24px', color: textColor,
-    stroke: '#060c1a', strokeThickness: 4,
-    shadow: { offsetX: 0, offsetY: 0, color: textColor, blur: 18, fill: true },
-  }).setOrigin(0.5).setAlpha(0.9);
-
-  // Invisible hit area (slightly larger for touch comfort)
-  const hit = scene.add.rectangle(x, y, w + 14, h + 14, 0, 0)
-    .setInteractive({ useHandCursor: true });
-
-  hit.on('pointerover', () => { draw(1, 0.96); label.setAlpha(1); });
-  hit.on('pointerout',  () => { draw(0.85, 0.90); label.setAlpha(0.9); });
-  hit.on('pointerdown', () => {
-    scene.tweens.add({
-      targets: [gfx, label], scaleX: 0.93, scaleY: 0.93,
-      duration: 65, yoyo: true, ease: 'Sine.easeIn',
-    });
-    onPress();
-  });
-}
-
 export class MenuScene extends Phaser.Scene {
   constructor() {
     super('MenuScene');
@@ -141,21 +85,24 @@ export class MenuScene extends Phaser.Scene {
     };
 
     // ── Ship selector ────────────────────────────────────────────
-    sectionLabel(182, 'SELECT SHIP');
+    sectionLabel(222, 'SELECT SHIP');
 
     // Card frame
-    this.add.rectangle(GAME_WIDTH / 2, 258, GAME_WIDTH - 36, 160, PANEL, 0.82)
+    this.add.rectangle(GAME_WIDTH / 2, 298, GAME_WIDTH - 36, 160, PANEL, 0.82)
       .setStrokeStyle(1, 0x0f2a48, 0.9);
 
     let selectedShipIdx = Storage.getSelectedShipIndex();
 
-    const shipImage = this.add.image(GAME_WIDTH / 2, 228, SHIP_CONFIGS[selectedShipIdx].texture).setScale(3);
-    const shipNameText = this.add.text(GAME_WIDTH / 2, 276, '', {
+    const shipImage = this.add.image(GAME_WIDTH / 2, 268, SHIP_CONFIGS[selectedShipIdx].texture).setScale(3);
+    const shipNameText = this.add.text(GAME_WIDTH / 2, 316, '', {
       fontFamily: FONT, fontSize: '20px', color: '#e8faff',
       stroke: '#060c1a', strokeThickness: 4,
     }).setOrigin(0.5);
-    const shipDescText = this.add.text(GAME_WIDTH / 2, 302, '', {
+    const shipDescText = this.add.text(GAME_WIDTH / 2, 342, '', {
       fontFamily: FONT, fontSize: '14px', color: '#7aaabb',
+    }).setOrigin(0.5);
+    const shipBestText = this.add.text(GAME_WIDTH / 2, 362, '', {
+      fontFamily: FONT, fontSize: '11px', color: '#ffe050', letterSpacing: 1,
     }).setOrigin(0.5);
 
     const refreshShip = (): void => {
@@ -166,12 +113,14 @@ export class MenuScene extends Phaser.Scene {
       shipDescText
         .setText(locked ? `🔒  Unlock at ${cfg.unlockScore.toLocaleString()} pts` : cfg.description)
         .setColor(locked ? '#445566' : '#7aaabb');
+      const best = Storage.getShipBest(selectedShipIdx);
+      shipBestText.setText(locked ? '' : best > 0 ? `★  Best  ${best.toLocaleString()}` : '').setVisible(!locked && best > 0);
       if (!locked) Storage.setSelectedShipIndex(selectedShipIdx);
     };
 
     const arrowCfg = { fontFamily: FONT, fontSize: '28px', color: '#6cf3ff', stroke: '#09101f', strokeThickness: 4 };
-    const leftArrow  = this.add.text(32, 228, '‹', arrowCfg).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const rightArrow = this.add.text(GAME_WIDTH - 32, 228, '›', arrowCfg).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const leftArrow  = this.add.text(32, 268, '‹', arrowCfg).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const rightArrow = this.add.text(GAME_WIDTH - 32, 268, '›', arrowCfg).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     leftArrow
       .on('pointerover', () => leftArrow.setColor('#ffffff'))
@@ -190,36 +139,8 @@ export class MenuScene extends Phaser.Scene {
 
     refreshShip();
 
-    // ── Theme picker ─────────────────────────────────────────────
-    sectionLabel(348, 'COLOUR THEME');
-
-    let selectedThemeId = Storage.getTheme();
-    const themeY = 390;
-    const spacing = (GAME_WIDTH - 60) / (THEME_IDS.length - 1);
-    const selRings: Phaser.GameObjects.Arc[] = [];
-
-    THEME_IDS.forEach((id, i) => {
-      const x = 30 + i * spacing;
-      const ring = this.add.circle(x, themeY, 22).setStrokeStyle(2.5, 0xffffff, id === selectedThemeId ? 1 : 0);
-      selRings.push(ring);
-      // Outer subtle glow halo
-      this.add.circle(x, themeY, 26, THEMES[id].bgTint, 0.18);
-      // Main swatch
-      this.add.circle(x, themeY, 18, THEMES[id].bgTint)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => {
-          selectedThemeId = id;
-          Storage.setTheme(id);
-          bg.setTint(THEMES[id].bgTint);
-          selRings.forEach((r, j) => r.setStrokeStyle(2.5, 0xffffff, THEME_IDS[j] === selectedThemeId ? 1 : 0));
-        });
-      this.add.text(x, themeY + 30, THEMES[id].label, {
-        fontFamily: FONT, fontSize: '9px', color: '#446688', letterSpacing: 1,
-      }).setOrigin(0.5, 0);
-    });
-
     // ── Game mode buttons ────────────────────────────────────────
-    sectionLabel(428, 'GAME MODE');
+    sectionLabel(400, 'GAME MODE');
 
     const startGame = (mode: GameMode): void => {
       const effectiveIdx = highScore >= SHIP_CONFIGS[selectedShipIdx].unlockScore
@@ -229,28 +150,103 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start('GameScene', { mode });
     };
 
-    makeBtn(this, GAME_WIDTH / 2, 475, 280, 58, 0x0b1e3a, 0x6cf3ff, 'TIMED — 60s', '#6cf3ff', () => startGame('timed'));
-    makeBtn(this, GAME_WIDTH / 2, 548, 280, 58, 0x0e0825, 0xc492ff, '∞  ENDLESS', '#c492ff', () => startGame('infinite'));
+    const modeCardW = 210;
+    const modeCardH = 112;
+    const modeCardGap = 12;
+    const modeStartX = (GAME_WIDTH - (modeCardW * 2 + modeCardGap)) / 2;
+    const modeCardY = 416;
 
-    // ── Mute + hint ──────────────────────────────────────────────
-    const muteText = this.add.text(GAME_WIDTH / 2, 624, '', {
-      fontFamily: FONT, fontSize: '14px', color: '#5a7a8a',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const modeDefs: Array<{
+      mode: GameMode;
+      icon: string;
+      title: string;
+      subtitle: string;
+      detail: string;
+      bg: number;
+      accentHex: number;
+      textCol: string;
+    }> = [
+      { mode: 'timed',    icon: '⏱', title: 'TIMED',   subtitle: '60 SECONDS',   detail: 'Race the clock. Fight for score.', bg: 0x081830, accentHex: 0x6cf3ff, textCol: '#6cf3ff' },
+      { mode: 'infinite', icon: '∞',  title: 'ENDLESS', subtitle: 'NO TIME LIMIT', detail: 'Survive as long as you can.',      bg: 0x100820, accentHex: 0xc492ff, textCol: '#c492ff' },
+    ];
 
-    const refreshMute = (): void => {
-      muteText.setText(Storage.getMuted() ? '🔇  Sound Off' : '🔊  Sound On');
-    };
-    refreshMute();
-    muteText.on('pointerdown', () => {
-      Storage.setMuted(!Storage.getMuted());
-      refreshMute();
+    modeDefs.forEach(({ mode, icon, title, subtitle, detail, bg: cardBg, accentHex, textCol }, i) => {
+      const cx = modeStartX + i * (modeCardW + modeCardGap);
+      const cy = modeCardY;
+      const gfx = this.add.graphics().setPosition(cx, cy);
+
+      const drawCard = (hover: boolean): void => {
+        gfx.clear();
+        // Background
+        gfx.fillStyle(cardBg, hover ? 0.98 : 0.88);
+        gfx.fillRoundedRect(0, 0, modeCardW, modeCardH, 14);
+        // Top accent bar
+        gfx.fillStyle(accentHex, hover ? 0.55 : 0.28);
+        gfx.fillRoundedRect(0, 0, modeCardW, 5, { tl: 14, tr: 14, bl: 0, br: 0 });
+        // Bottom glow strip
+        gfx.fillStyle(accentHex, hover ? 0.18 : 0.07);
+        gfx.fillRoundedRect(0, modeCardH - 5, modeCardW, 5, { tl: 0, tr: 0, bl: 14, br: 14 });
+        // Side glow bars
+        gfx.fillStyle(accentHex, hover ? 0.10 : 0.04);
+        gfx.fillRect(0, 5, 3, modeCardH - 10);
+        gfx.fillRect(modeCardW - 3, 5, 3, modeCardH - 10);
+        // Outer border
+        gfx.lineStyle(hover ? 2 : 1.5, accentHex, hover ? 0.90 : 0.35);
+        gfx.strokeRoundedRect(0, 0, modeCardW, modeCardH, 14);
+        // Inner gloss
+        gfx.lineStyle(1, 0xffffff, hover ? 0.14 : 0.05);
+        gfx.strokeRoundedRect(2, 2, modeCardW - 4, modeCardH - 4, 12);
+      };
+
+      drawCard(false);
+
+      // Icon
+      this.add.text(cx + modeCardW / 2, cy + 26, icon, {
+        fontFamily: FONT, fontSize: '26px', color: textCol,
+        shadow: { offsetX: 0, offsetY: 0, color: textCol, blur: 18, fill: true },
+      }).setOrigin(0.5);
+
+      // Title
+      this.add.text(cx + modeCardW / 2, cy + 56, title, {
+        fontFamily: FONT, fontSize: '18px', color: textCol,
+        stroke: '#020810', strokeThickness: 4,
+      }).setOrigin(0.5);
+
+      // Subtitle badge
+      this.add.text(cx + modeCardW / 2, cy + 78, subtitle, {
+        fontFamily: FONT, fontSize: '10px', color: textCol, letterSpacing: 2,
+      }).setOrigin(0.5).setAlpha(0.65);
+
+      // Detail line
+      this.add.text(cx + modeCardW / 2, cy + 97, detail, {
+        fontFamily: 'Arial, sans-serif', fontSize: '10px', color: '#3a5a78',
+      }).setOrigin(0.5);
+
+      // Hit zone
+      this.add.rectangle(cx + modeCardW / 2, cy + modeCardH / 2, modeCardW, modeCardH, 0, 0)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => drawCard(true))
+        .on('pointerout',  () => drawCard(false))
+        .on('pointerdown', () => {
+          this.tweens.add({ targets: gfx, scaleX: 0.94, scaleY: 0.94, duration: 65, yoyo: true, ease: 'Sine.easeIn' });
+          this.time.delayedCall(100, () => startGame(mode));
+        });
     });
 
-    // ── Power-up info button ──────────────────────────────────────
-    const infoBtn = this.add.text(GAME_WIDTH / 2, 655, 'ⓘ  POWER-UPS', {
-      fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#4a7a9a',
-      letterSpacing: 2,
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    // ── Bottom icon bar: Settings · Power-ups ────────────────────
+    const iconBarY = 624;
+    const iconBtnStyle = { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#4a7a9a', letterSpacing: 1 };
+
+    const settingsBtn = this.add.text(GAME_WIDTH / 2 - 80, iconBarY, '⚙️  Settings', iconBtnStyle)
+      .setOrigin(0.5).setInteractive({ useHandCursor: true });
+    settingsBtn.on('pointerover', () => settingsBtn.setColor('#aaccdd'));
+    settingsBtn.on('pointerout',  () => settingsBtn.setColor('#4a7a9a'));
+    settingsBtn.on('pointerdown', () => this.showSettingsOverlay(bg));
+
+    this.add.text(GAME_WIDTH / 2, iconBarY + 1, '|', { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#1a3050' }).setOrigin(0.5);
+
+    const infoBtn = this.add.text(GAME_WIDTH / 2 + 80, iconBarY, 'ⓘ  Power-Ups', iconBtnStyle)
+      .setOrigin(0.5).setInteractive({ useHandCursor: true });
     infoBtn.on('pointerover', () => infoBtn.setColor('#6cf3ff'));
     infoBtn.on('pointerout',  () => infoBtn.setColor('#4a7a9a'));
     infoBtn.on('pointerdown', () => this.showPowerUpOverlay());
@@ -260,6 +256,148 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.input.keyboard?.once('keydown-SPACE', () => startGame('timed'));
+  }
+
+  private showSettingsOverlay(bgSprite: Phaser.GameObjects.TileSprite): void {
+    const W = GAME_WIDTH;
+    const panelW = 420;
+    const panelH = 300;
+    const panelX = (W - panelW) / 2;
+    const panelY = (GAME_HEIGHT - panelH) / 2;
+
+    const container = this.add.container(0, 0).setDepth(60).setAlpha(0);
+
+    const backdrop = this.add.rectangle(W / 2, GAME_HEIGHT / 2, W, GAME_HEIGHT, 0x000000, 0.78).setInteractive();
+    container.add(backdrop);
+
+    const panelGfx = this.add.graphics();
+    panelGfx.fillStyle(0x030c1c, 0.97);
+    panelGfx.fillRoundedRect(panelX, panelY, panelW, panelH, 18);
+    panelGfx.lineStyle(1.5, 0x0f2a50, 1);
+    panelGfx.strokeRoundedRect(panelX, panelY, panelW, panelH, 18);
+    panelGfx.lineStyle(1, 0x6cf3ff, 0.18);
+    panelGfx.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 16);
+    container.add(panelGfx);
+
+    container.add(this.add.text(W / 2, panelY + 26, 'SETTINGS', {
+      fontFamily: FONT, fontSize: '20px', color: '#6cf3ff',
+      stroke: '#09101f', strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 14, fill: true },
+    }).setOrigin(0.5));
+
+    container.add(this.add.rectangle(W / 2, panelY + 48, panelW - 36, 1, 0x1a3060, 0.8));
+
+    // ── Colour Theme ────────────────────────────────────────────
+    container.add(this.add.text(panelX + 22, panelY + 62, 'COLOUR THEME', {
+      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+    }));
+
+    const CARD_W = 66;
+    const CARD_H = 80;
+    const CARD_GAP = 10;
+    const totalW = THEME_IDS.length * CARD_W + (THEME_IDS.length - 1) * CARD_GAP;
+    const cardsStartX = (W - totalW) / 2;
+    const cardsY = panelY + 78;
+
+    let selectedThemeId = Storage.getTheme();
+    const cardGfxList: Phaser.GameObjects.Graphics[] = [];
+    const cardLabels: Phaser.GameObjects.Text[] = [];
+    const cardChecks: Phaser.GameObjects.Text[] = [];
+
+    const drawCard = (gfx: Phaser.GameObjects.Graphics, id: typeof THEME_IDS[number], selected: boolean, hover = false): void => {
+      const col = THEMES[id].bgTint;
+      const bul = THEMES[id].bulletTint;
+      gfx.clear();
+      gfx.fillStyle(0x050e1c, selected ? 0.98 : hover ? 0.88 : 0.70);
+      gfx.fillRoundedRect(0, 0, CARD_W, CARD_H, 10);
+      gfx.fillStyle(col, selected ? 0.92 : hover ? 0.72 : 0.50);
+      gfx.fillRoundedRect(0, 0, CARD_W, 46, { tl: 10, tr: 10, bl: 0, br: 0 });
+      gfx.fillStyle(bul, selected ? 1.0 : hover ? 0.80 : 0.55);
+      gfx.fillRect(12, 32, CARD_W - 24, 5);
+      gfx.fillStyle(0xffffff, selected ? 0.10 : 0.05);
+      gfx.fillRoundedRect(4, 3, CARD_W - 8, 16, { tl: 8, tr: 8, bl: 0, br: 0 });
+      if (selected) {
+        gfx.lineStyle(2.5, col, 1.0);
+        gfx.strokeRoundedRect(0, 0, CARD_W, CARD_H, 10);
+        gfx.lineStyle(1, 0xffffff, 0.22);
+        gfx.strokeRoundedRect(2, 2, CARD_W - 4, CARD_H - 4, 8);
+      } else {
+        gfx.lineStyle(hover ? 1.5 : 1, hover ? col : 0x1a3060, hover ? 0.55 : 0.60);
+        gfx.strokeRoundedRect(0, 0, CARD_W, CARD_H, 10);
+      }
+    };
+
+    THEME_IDS.forEach((id, i) => {
+      const cx = cardsStartX + i * (CARD_W + CARD_GAP);
+      const gfx = this.add.graphics().setPosition(cx, cardsY);
+      cardGfxList.push(gfx);
+      drawCard(gfx, id, id === selectedThemeId);
+      container.add(gfx);
+
+      const lbl = this.add.text(cx + CARD_W / 2, cardsY + 56, THEMES[id].label.toUpperCase(), {
+        fontFamily: FONT, fontSize: '8px',
+        color: id === selectedThemeId ? '#aaccdd' : '#3e6080', letterSpacing: 1,
+      }).setOrigin(0.5, 0);
+      cardLabels.push(lbl);
+      container.add(lbl);
+
+      const chk = this.add.text(cx + CARD_W / 2, cardsY + 68, '✓', {
+        fontFamily: FONT, fontSize: '10px', color: '#6cf3ff',
+      }).setOrigin(0.5, 0).setVisible(id === selectedThemeId);
+      cardChecks.push(chk);
+      container.add(chk);
+
+      const hit = this.add.rectangle(cx + CARD_W / 2, cardsY + CARD_H / 2, CARD_W, CARD_H, 0, 0)
+        .setInteractive({ useHandCursor: true });
+      container.add(hit);
+
+      hit.on('pointerover', () => { if (id !== selectedThemeId) drawCard(gfx, id, false, true); });
+      hit.on('pointerout',  () => { drawCard(gfx, id, id === selectedThemeId); });
+      hit.on('pointerdown', () => {
+        selectedThemeId = id;
+        Storage.setTheme(id);
+        bgSprite.setTint(THEMES[id].bgTint);
+        cardGfxList.forEach((g, j) => drawCard(g, THEME_IDS[j], THEME_IDS[j] === selectedThemeId));
+        cardLabels.forEach((l, j) => l.setColor(THEME_IDS[j] === selectedThemeId ? '#aaccdd' : '#3e6080'));
+        cardChecks.forEach((c, j) => c.setVisible(THEME_IDS[j] === selectedThemeId));
+      });
+    });
+
+    // ── Divider + Mute ──────────────────────────────────────────
+    const muteLineY = panelY + 182;
+    container.add(this.add.rectangle(W / 2, muteLineY, panelW - 36, 1, 0x1a3060, 0.6));
+    container.add(this.add.text(panelX + 22, muteLineY + 12, 'SOUND', {
+      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+    }));
+
+    const muteLbl = this.add.text(panelX + panelW - 22, muteLineY + 12, '', {
+      fontFamily: FONT, fontSize: '14px', color: '#6cf3ff',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    container.add(muteLbl);
+
+    const refreshMuteToggle = (): void => {
+      muteLbl.setText(Storage.getMuted() ? '🔇  Off' : '🔊  On');
+    };
+    refreshMuteToggle();
+    muteLbl.on('pointerdown', () => {
+      Storage.setMuted(!Storage.getMuted());
+      refreshMuteToggle();
+    });
+
+    // ── Close ───────────────────────────────────────────────────
+    container.add(this.add.text(W / 2, panelY + panelH - 10, 'TAP ANYWHERE TO CLOSE', {
+      fontFamily: FONT, fontSize: '9px', color: '#1e3a50', letterSpacing: 4,
+    }).setOrigin(0.5, 1));
+
+    this.tweens.add({ targets: container, alpha: 1, duration: 160 });
+
+    const close = (): void => {
+      escKey?.off('down', close);
+      this.tweens.add({ targets: container, alpha: 0, duration: 120, onComplete: () => container.destroy() });
+    };
+    backdrop.on('pointerdown', close);
+    const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    escKey?.once('down', close);
   }
 
   private showPowerUpOverlay(): void {

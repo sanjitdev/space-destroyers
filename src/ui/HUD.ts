@@ -137,6 +137,11 @@ export class HUD extends Phaser.GameObjects.Container {
     ]);
   }
 
+  flashPowerUpRow(): void {
+    this.powerUpRow.setColor('#ffee44');
+    this.scene.time.delayedCall(180, () => this.powerUpRow.setColor('#a8d8f0'));
+  }
+
   sync(
     score: number,
     highScore: number,

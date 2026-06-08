@@ -17,6 +17,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private autoFireEnabled = false;
   private readonly shipSpeed: number;
   private readonly shipCooldownMod: number;
+  private readonly exhaustEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(scene: Phaser.Scene, x: number, y: number, ship: ShipConfig) {
     super(scene, x, y, ship.texture);
@@ -32,6 +33,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(ship.gameScale);
     // Constrain physics body to the core hull (excludes wings/exhaust extremities)
     body.setSize(this.displayWidth * 0.52, this.displayHeight * 0.48);
+
+    this.exhaustEmitter = scene.add.particles(x, y, 'particle', {
+      lifespan: 320,
+      speed: { min: 30, max: 80 },
+      angle: { min: 80, max: 100 },
+      scale: { start: 0.55, end: 0 },
+      alpha: { start: 0.75, end: 0 },
+      tint: [0x57e2e5, 0x6cf3ff, 0xffffff],
+      frequency: 30,
+      blendMode: Phaser.BlendModes.ADD,
+      quantity: 2,
+    }).setDepth(4);
   }
 
   update(deltaMs: number, horizontalInput: number, touchTargetX: number | null): void {
@@ -50,6 +63,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.alpha = 1;
     }
+
+    this.exhaustEmitter.setPosition(this.x, this.y + this.displayHeight * 0.42);
   }
 
   canFire(): boolean {

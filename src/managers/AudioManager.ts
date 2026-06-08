@@ -49,19 +49,27 @@ export class AudioManager {
 
   playExplosion(): void {
     this.playTone(140, 0.18, 'sawtooth', 0.05, 70);
+    this.vibrate(30);
   }
 
   playPowerUp(): void {
     this.playTone(520, 0.12, 'triangle', 0.05, 820);
+    this.vibrate(15);
   }
 
   playDamage(): void {
     this.playTone(180, 0.14, 'square', 0.05, 110);
+    this.vibrate([50, 30, 80]);
   }
 
   playLaser(): void {
     this.playTone(180, 0.65, 'sawtooth', 0.22, 1800);
     this.playTone(360, 0.50, 'square', 0.09, 2200);
+    this.vibrate(200);
+  }
+
+  private vibrate(pattern: number | number[]): void {
+    navigator.vibrate?.(pattern);
   }
 
   destroy(): void {

@@ -4,6 +4,11 @@ const HIGH_SCORE_KEY = 'space-destroyers-high-score';
 const MUTED_KEY = 'space-destroyers-muted';
 const THEME_KEY = 'space-destroyers-theme';
 const SHIP_KEY = 'space-destroyers-ship';
+const GAMES_PLAYED_KEY = 'space-destroyers-games-played';
+const TOTAL_KILLS_KEY = 'space-destroyers-total-kills';
+const TOTAL_BOSSES_KEY = 'space-destroyers-total-bosses';
+const SHIP_BEST_KEY = (idx: number) => `space-destroyers-ship-best-${idx}`;
+const TUTORIAL_KEY = 'space-destroyers-tutorial-done';
 
 const withStorage = <T>(fallback: T, action: () => T): T => {
   try {
@@ -53,6 +58,57 @@ export const Storage = {
   setSelectedShipIndex(index: number): void {
     withStorage(undefined, () => {
       window.localStorage.setItem(SHIP_KEY, String(index));
+      return undefined;
+    });
+  },
+
+  getGamesPlayed(): number {
+    return withStorage(0, () => Number.parseInt(window.localStorage.getItem(GAMES_PLAYED_KEY) ?? '0', 10) || 0);
+  },
+  incrementGamesPlayed(): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(GAMES_PLAYED_KEY, String(this.getGamesPlayed() + 1));
+      return undefined;
+    });
+  },
+
+  getTotalKills(): number {
+    return withStorage(0, () => Number.parseInt(window.localStorage.getItem(TOTAL_KILLS_KEY) ?? '0', 10) || 0);
+  },
+  addKills(count: number): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(TOTAL_KILLS_KEY, String(this.getTotalKills() + count));
+      return undefined;
+    });
+  },
+
+  getTotalBossesKilled(): number {
+    return withStorage(0, () => Number.parseInt(window.localStorage.getItem(TOTAL_BOSSES_KEY) ?? '0', 10) || 0);
+  },
+  addBossKills(count: number): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(TOTAL_BOSSES_KEY, String(this.getTotalBossesKilled() + count));
+      return undefined;
+    });
+  },
+
+  getShipBest(shipIndex: number): number {
+    return withStorage(0, () => Number.parseInt(window.localStorage.getItem(SHIP_BEST_KEY(shipIndex)) ?? '0', 10) || 0);
+  },
+  updateShipBest(shipIndex: number, score: number): void {
+    withStorage(undefined, () => {
+      const current = this.getShipBest(shipIndex);
+      if (score > current) window.localStorage.setItem(SHIP_BEST_KEY(shipIndex), String(score));
+      return undefined;
+    });
+  },
+
+  hasDoneTutorial(): boolean {
+    return withStorage(false, () => window.localStorage.getItem(TUTORIAL_KEY) === 'true');
+  },
+  markTutorialDone(): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(TUTORIAL_KEY, 'true');
       return undefined;
     });
   },

@@ -6,6 +6,7 @@ import { EnemyBullet } from '../entities/EnemyBullet';
 import { Player } from '../entities/Player';
 import { PowerUp } from '../entities/PowerUp';
 import { AudioManager } from '../managers/AudioManager';
+import { AchievementManager } from '../managers/AchievementManager';
 import { BossManager } from '../managers/BossManager';
 import { ComboManager } from '../managers/ComboManager';
 import { DifficultyManager } from '../managers/DifficultyManager';
@@ -36,6 +37,7 @@ export class GameScene extends Phaser.Scene {
   private comboManager!: ComboManager;
   private bossManager!: BossManager;
   private statsManager!: StatsManager;
+  private achievementManager!: AchievementManager;
   private backgroundNebula!: Phaser.GameObjects.TileSprite;
   private background!: Phaser.GameObjects.TileSprite;
   private backgroundFar!: Phaser.GameObjects.TileSprite;
@@ -50,6 +52,8 @@ export class GameScene extends Phaser.Scene {
   private shootHeld = false;
   private gameFinished = false;
   private levelTransition = false;
+  private countdownActive = false;
+  private paused = false;
   private mode: GameMode = 'timed';
   private themeBulletTint = 0xffffff;
 
@@ -92,6 +96,7 @@ export class GameScene extends Phaser.Scene {
     this.comboManager = new ComboManager();
     this.bossManager = new BossManager(this);
     this.statsManager = new StatsManager();
+    this.achievementManager = new AchievementManager(this);
     this.hud = new HUD(this, () => this.toggleMute());
 
     // Combo counter — anchored in the HUD header, above all other HUD elements
@@ -112,14 +117,59 @@ export class GameScene extends Phaser.Scene {
       this.player.toggleAutoFire();
       this.syncHud();
     });
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).on('down', () => this.togglePause());
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.P).on('down', () => this.togglePause());
 
     this.createTouchControls();
     this.createCollisions();
     this.syncHud();
+    this.startCountdown();
+  }
+
+  private startCountdown(): void {
+    this.countdownActive = true;
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+
+    const overlay = this.add.rectangle(cx, cy, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.45).setDepth(40);
+
+    const countText = this.add.text(cx, cy, '', {
+      fontFamily: 'Arial Black, sans-serif',
+      fontSize: '120px',
+      color: '#6cf3ff',
+      stroke: '#061220',
+      strokeThickness: 10,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 40, fill: true },
+    }).setOrigin(0.5).setDepth(41).setAlpha(0);
+
+    const show = (label: string, color: string, onDone: () => void): void => {
+      countText.setText(label).setColor(color).setScale(1.4).setAlpha(1);
+      this.tweens.add({
+        targets: countText,
+        scale: 1,
+        alpha: 0,
+        duration: 800,
+        ease: 'Expo.easeIn',
+        onComplete: onDone,
+      });
+    };
+
+    this.time.delayedCall(200,  () => show('3', '#ff6644', () =>
+    this.time.delayedCall(900,  () => show('2', '#ffcc00', () =>
+    this.time.delayedCall(900,  () => show('1', '#44ff88', () =>
+    this.time.delayedCall(900,  () => {
+      show('GO!', '#ffffff', () => {
+        overlay.destroy();
+        countText.destroy();
+        this.showTutorialIfNeeded();
+      });
+      this.countdownActive = false;
+    })))))
+    ));
   }
 
   update(_time: number, delta: number): void {
-    if (this.gameFinished) {
+    if (this.gameFinished || this.paused) {
       return;
     }
 
@@ -130,6 +180,7 @@ export class GameScene extends Phaser.Scene {
     this.background.tilePositionY -= 0.9;
 
     if (this.levelTransition) return;
+    if (this.countdownActive) return;
 
     this.audioManager.update(frameDelta);
     this.timerManager.update(frameDelta);
@@ -194,6 +245,10 @@ export class GameScene extends Phaser.Scene {
 
     // Enemy shooting — medium/heavy fire back periodically
     this.updateEnemyShooting(frameDelta);
+
+    if (this.powerUpManager.getExpiringTypes(2000).length > 0) {
+      if (Math.floor(this.time.now / 300) % 2 === 0) this.hud.flashPowerUpRow();
+    }
 
     this.syncHud();
     this.updateComboDisplay();
@@ -293,7 +348,8 @@ export class GameScene extends Phaser.Scene {
     this.comboManager.onDamage();
     this.statsManager.recordDamage();
     this.audioManager.playDamage();
-    this.cameras.main.shake(140, 0.006);
+    this.cameras.main.shake(220, 0.012);
+    this.cameras.main.flash(120, 255, 0, 0, false);
     new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
     if (this.player.isOutOfLives()) {
       this.finishGame('death');
@@ -659,12 +715,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showBossWarning(name = 'BOSS', level = 1): void {
-    const warn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, `⚠ LV.${level} ${name.toUpperCase()} ⚠`, {
+    // Full-screen red vignette pulse
+    const vignette = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0xff0022, 0)
+      .setDepth(29);
+    this.tweens.add({
+      targets: vignette,
+      alpha: { from: 0, to: 0.35 },
+      yoyo: true,
+      repeat: 3,
+      duration: 250,
+      ease: 'Sine.easeInOut',
+      onComplete: () => vignette.destroy(),
+    });
+
+    // Screen shake buildup
+    this.cameras.main.shake(1200, 0.005);
+
+    const warn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, `⚠  LV.${level} ${name.toUpperCase()}  ⚠`, {
       color: '#ff3366',
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '36px',
       stroke: '#09101f',
       strokeThickness: 7,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ff0022', blur: 24, fill: true },
     }).setOrigin(0.5).setDepth(30).setAlpha(0);
 
     this.tweens.add({
@@ -744,6 +817,123 @@ export class GameScene extends Phaser.Scene {
     return Phaser.Math.Distance.Between(x, y, GAME_WIDTH - 68, GAME_HEIGHT - 78) <= 54;
   }
 
+  private showTutorialIfNeeded(): void {
+    if (Storage.hasDoneTutorial()) return;
+    Storage.markTutorialDone();
+
+    const FONT = 'Arial Black, sans-serif';
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+    const panelW = 380;
+    const panelH = 340;
+
+    const dim = this.add.rectangle(cx, cy, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.72).setDepth(45);
+
+    const panel = this.add.graphics().setDepth(46);
+    panel.fillStyle(0x030a18, 0.97);
+    panel.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 16);
+    panel.lineStyle(2, 0x1a4a7a, 0.9);
+    panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 16);
+
+    const title = this.add.text(cx, cy - panelH / 2 + 26, 'HOW TO PLAY', {
+      fontFamily: FONT, fontSize: '22px', color: '#6cf3ff',
+      stroke: '#061220', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(47);
+
+    const rows = [
+      ['🖱 / ←→ Keys', 'Move your ship'],
+      ['SPACE / Right side', 'Fire'],
+      ['E Key', 'Use stored power-up'],
+      ['F Key', 'Toggle auto-fire'],
+      ['ESC / P', 'Pause'],
+      ['⚡ Power-ups', 'Collect to gain abilities'],
+      ['👾 Boss (skull)', 'Spawns every 10 kills'],
+    ];
+
+    rows.forEach(([key, desc], i) => {
+      const y = cy - panelH / 2 + 68 + i * 32;
+      this.add.text(cx - 14, y, key, {
+        fontFamily: FONT, fontSize: '13px', color: '#ffe050',
+      }).setOrigin(1, 0.5).setDepth(47);
+      this.add.text(cx + 6, y, desc, {
+        fontFamily: FONT, fontSize: '13px', color: '#8ab8cc',
+      }).setOrigin(0, 0.5).setDepth(47);
+    });
+
+    const hint = this.add.text(cx, cy + panelH / 2 - 20, 'TAP ANYWHERE TO START', {
+      fontFamily: FONT, fontSize: '12px', color: '#2c5070', letterSpacing: 2,
+    }).setOrigin(0.5).setDepth(47);
+
+    const all = [dim, panel, title, hint];
+    this.add.rectangle(cx, cy, GAME_WIDTH, GAME_HEIGHT, 0, 0).setDepth(48)
+      .setInteractive()
+      .once('pointerdown', () => all.forEach(o => o.destroy()));
+  }
+
+  private togglePause(): void {
+    if (this.gameFinished || this.countdownActive || this.levelTransition) return;
+    if (this.paused) {
+      this.resumeFromPause();
+    } else {
+      this.showPauseMenu();
+    }
+  }
+
+  private pauseOverlay?: Phaser.GameObjects.Container;
+
+  private showPauseMenu(): void {
+    this.paused = true;
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+    const FONT = 'Arial Black, sans-serif';
+
+    const dim = this.add.rectangle(cx, cy, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.60).setDepth(50);
+
+    const panelW = 320;
+    const panelH = 220;
+    const panel = this.add.graphics().setDepth(51);
+    panel.fillStyle(0x030a18, 0.97);
+    panel.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 16);
+    panel.lineStyle(2, 0x1a4a7a, 0.9);
+    panel.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 16);
+
+    const title = this.add.text(cx, cy - 76, 'PAUSED', {
+      fontFamily: FONT, fontSize: '36px', color: '#6cf3ff',
+      stroke: '#061220', strokeThickness: 8,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 18, fill: true },
+    }).setOrigin(0.5).setDepth(52);
+
+    const makeBtn = (y: number, label: string, color: string, onTap: () => void): void => {
+      const bw = 200;
+      const bh = 52;
+      const bg = this.add.graphics().setDepth(52);
+      bg.fillStyle(0x050e1c, 0.92);
+      bg.fillRoundedRect(cx - bw / 2, y - bh / 2, bw, bh, 10);
+      bg.lineStyle(2, Phaser.Display.Color.HexStringToColor(color).color, 0.75);
+      bg.strokeRoundedRect(cx - bw / 2, y - bh / 2, bw, bh, 10);
+      const txt = this.add.text(cx, y, label, {
+        fontFamily: FONT, fontSize: '22px', color, stroke: '#060c1a', strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(53);
+      this.add.rectangle(cx, y, bw, bh, 0, 0).setDepth(54).setInteractive({ useHandCursor: true })
+        .on('pointerdown', onTap);
+      this.pauseOverlay?.add([bg, txt]);
+    };
+
+    const hint = this.add.text(cx, cy + 84, 'ESC / P to resume', {
+      fontFamily: FONT, fontSize: '13px', color: '#3a6080',
+    }).setOrigin(0.5).setDepth(52);
+
+    this.pauseOverlay = this.add.container(0, 0, [dim, panel, title, hint]).setDepth(50);
+    makeBtn(cy - 18, '▶  RESUME', '#6cf3ff', () => this.resumeFromPause());
+    makeBtn(cy + 48, '✕  QUIT', '#ff6688', () => { this.paused = false; this.scene.start('MenuScene'); });
+  }
+
+  private resumeFromPause(): void {
+    this.pauseOverlay?.destroy();
+    this.pauseOverlay = undefined;
+    this.paused = false;
+  }
+
   private toggleMute(): void {
     this.audioManager.toggleMute();
     this.syncHud();
@@ -769,6 +959,13 @@ export class GameScene extends Phaser.Scene {
     this.audioManager.destroy();
     const summary = this.statsManager.getSummary();
     const grade = this.statsManager.computeGrade(this.scoreManager.getScore());
+
+    Storage.incrementGamesPlayed();
+    Storage.addKills(summary.enemiesKilled);
+    Storage.addBossKills(summary.bossesKilled);
+    Storage.updateShipBest(Storage.getSelectedShipIndex(), this.scoreManager.getScore());
+    this.achievementManager.check();
+
     this.scene.start('GameOverScene', {
       score: this.scoreManager.getScore(),
       highScore: this.scoreManager.getHighScore(),
