@@ -12,8 +12,8 @@ export class ScoreManager {
     return this.highScore;
   }
 
-  add(points: number, doubled: boolean): number {
-    const awarded = doubled ? points * 2 : points;
+  add(points: number, doubled: boolean, comboMultiplier = 1): number {
+    const awarded = points * comboMultiplier * (doubled ? 2 : 1);
     this.score += awarded;
 
     if (this.score > this.highScore) {

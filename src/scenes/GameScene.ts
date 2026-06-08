@@ -1,13 +1,18 @@
 import Phaser from 'phaser';
+import { Boss } from '../entities/Boss';
 import { Bullet } from '../entities/Bullet';
 import { Enemy } from '../entities/Enemy';
+import { EnemyBullet } from '../entities/EnemyBullet';
 import { Player } from '../entities/Player';
 import { PowerUp } from '../entities/PowerUp';
 import { AudioManager } from '../managers/AudioManager';
+import { BossManager } from '../managers/BossManager';
+import { ComboManager } from '../managers/ComboManager';
 import { DifficultyManager } from '../managers/DifficultyManager';
 import { EnemySpawnManager } from '../managers/EnemySpawnManager';
 import { PowerUpManager } from '../managers/PowerUpManager';
 import { ScoreManager } from '../managers/ScoreManager';
+import { StatsManager } from '../managers/StatsManager';
 import { TimerManager } from '../managers/TimerManager';
 import { FloatingText } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
@@ -18,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   private player!: Player;
   private bullets!: Phaser.Physics.Arcade.Group;
   private enemies!: Phaser.Physics.Arcade.Group;
+  private enemyBullets!: Phaser.Physics.Arcade.Group;
   private powerUps!: Phaser.Physics.Arcade.Group;
   private hud!: HUD;
   private scoreManager!: ScoreManager;
@@ -26,7 +32,12 @@ export class GameScene extends Phaser.Scene {
   private powerUpManager!: PowerUpManager;
   private enemySpawnManager!: EnemySpawnManager;
   private audioManager!: AudioManager;
+  private comboManager!: ComboManager;
+  private bossManager!: BossManager;
+  private statsManager!: StatsManager;
   private background!: Phaser.GameObjects.TileSprite;
+  private backgroundFar!: Phaser.GameObjects.TileSprite;
+  private comboText!: Phaser.GameObjects.Text;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private fireKey?: Phaser.Input.Keyboard.Key;
   private movePointerId: number | null = null;
@@ -51,13 +62,16 @@ export class GameScene extends Phaser.Scene {
     const theme = THEMES[Storage.getTheme()];
     this.themeBulletTint = theme.bulletTint;
 
-    this.background = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint);
+    // Parallax backgrounds — far layer scrolls slower
+    this.backgroundFar = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg-far').setOrigin(0).setAlpha(0.55).setDepth(-2);
+    this.background = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'space-bg').setOrigin(0).setTint(theme.bgTint).setDepth(-1);
 
     this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
     this.input.addPointer(2);
 
     this.bullets = this.physics.add.group({ classType: Bullet, maxSize: 60, runChildUpdate: true });
     this.enemies = this.physics.add.group({ runChildUpdate: true });
+    this.enemyBullets = this.physics.add.group({ classType: EnemyBullet, maxSize: 40, runChildUpdate: true });
     this.powerUps = this.physics.add.group({ classType: PowerUp, maxSize: 16, runChildUpdate: true });
 
     const ship = SHIP_CONFIGS[Storage.getSelectedShipIndex()];
@@ -68,7 +82,19 @@ export class GameScene extends Phaser.Scene {
     this.powerUpManager = new PowerUpManager();
     this.enemySpawnManager = new EnemySpawnManager(this, this.enemies, this.difficultyManager);
     this.audioManager = new AudioManager(this);
+    this.comboManager = new ComboManager();
+    this.bossManager = new BossManager(this);
+    this.statsManager = new StatsManager();
     this.hud = new HUD(this, () => this.toggleMute());
+
+    // Combo counter — floats near player area, depth above HUD
+    this.comboText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 130, '', {
+      color: '#ffe050',
+      fontFamily: 'Arial Black, sans-serif',
+      fontSize: '28px',
+      stroke: '#09101f',
+      strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(25).setAlpha(0);
 
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.fireKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -86,12 +112,26 @@ export class GameScene extends Phaser.Scene {
 
     const frameDelta = Math.min(delta, 50);
 
+    this.backgroundFar.tilePositionY -= 0.35;
     this.background.tilePositionY -= 0.9;
     this.audioManager.update(frameDelta);
     this.timerManager.update(frameDelta);
     this.powerUpManager.update(frameDelta);
+    this.comboManager.update(frameDelta);
     this.difficultyManager.update(this.timerManager.getElapsedMs());
     this.enemySpawnManager.update(frameDelta);
+
+    // Boss spawn check + update
+    if (this.bossManager.checkSpawn(this.timerManager.getElapsedMs())) {
+      this.showBossWarning();
+    }
+    const boss = this.bossManager.getBoss();
+    if (boss?.active) {
+      boss.update(frameDelta, (x, y) => this.spawnEnemyBullet(x, y, 0, 260));
+      this.hud.setBossHp(boss.getHpFraction());
+    } else {
+      this.hud.setBossHp(null);
+    }
 
     const horizontalInput = this.getHorizontalInput();
     this.player.update(frameDelta, horizontalInput, this.touchMoveX);
@@ -106,7 +146,11 @@ export class GameScene extends Phaser.Scene {
       this.fireVolley();
     }
 
+    // Enemy shooting — medium/heavy fire back periodically
+    this.updateEnemyShooting(frameDelta);
+
     this.syncHud();
+    this.updateComboDisplay();
 
     if (this.timerManager.isComplete()) {
       this.finishGame('time');
@@ -121,9 +165,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.bullets, this.enemies, (bulletObject, enemyObject) => {
       const bullet = bulletObject as Bullet;
       const enemy = enemyObject as Enemy;
-      if (!bullet.active || !enemy.active) {
-        return;
-      }
+      if (!bullet.active || !enemy.active) return;
 
       bullet.deactivate();
       const destroyed = enemy.damage(1);
@@ -132,32 +174,39 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    // Player bullets vs boss
+    this.physics.add.overlap(this.bullets, this.getBossAsGroup(), (bulletObject) => {
+      const bullet = bulletObject as Bullet;
+      const boss = this.bossManager.getBoss();
+      if (!bullet.active || !boss?.active) return;
+
+      bullet.deactivate();
+      const destroyed = boss.damage(1);
+      if (destroyed) {
+        this.destroyBoss(boss);
+      }
+    });
+
+    // Enemy bullets vs player
+    this.physics.add.overlap(this.enemyBullets, this.player, (_playerObj, bulletObj) => {
+      const eb = bulletObj as EnemyBullet;
+      if (!eb.active) return;
+      eb.deactivate();
+      this.handlePlayerDamage();
+    });
+
     this.physics.add.overlap(this.player, this.enemies, (_playerObject, enemyObject) => {
       const enemy = enemyObject as Enemy;
-      if (!enemy.active) {
-        return;
-      }
+      if (!enemy.active) return;
 
       enemy.destroy();
       this.createExplosion(enemy.x, enemy.y, enemy.getTintColor());
-
-      const damaged = this.player.takeDamage(this.powerUpManager.isActive('shield'));
-      if (damaged) {
-        this.audioManager.playDamage();
-        this.cameras.main.shake(140, 0.006);
-        new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
-      }
-
-      if (this.player.isOutOfLives()) {
-        this.finishGame('death');
-      }
+      this.handlePlayerDamage();
     });
 
     this.physics.add.overlap(this.player, this.powerUps, (_playerObject, powerUpObject) => {
       const powerUp = powerUpObject as PowerUp;
-      if (!powerUp.active) {
-        return;
-      }
+      if (!powerUp.active) return;
 
       powerUp.collect();
       const type = powerUp.getPowerUpType();
@@ -170,6 +219,26 @@ export class GameScene extends Phaser.Scene {
       new FloatingText(this, this.player.x, this.player.y - 40, POWER_UP_LABELS[type], '#f5f7a6');
       this.syncHud();
     });
+  }
+
+  /** Wraps the live boss in a static array so overlap() can reference it. */
+  private getBossAsGroup(): Phaser.GameObjects.GameObject[] {
+    const boss = this.bossManager.getBoss();
+    return boss ? [boss] : [];
+  }
+
+  private handlePlayerDamage(): void {
+    const damaged = this.player.takeDamage(this.powerUpManager.isActive('shield'));
+    if (damaged) {
+      this.comboManager.onDamage();
+      this.statsManager.recordDamage();
+      this.audioManager.playDamage();
+      this.cameras.main.shake(140, 0.006);
+      new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
+    }
+    if (this.player.isOutOfLives()) {
+      this.finishGame('death');
+    }
   }
 
   private createTouchControls(): void {
@@ -243,6 +312,7 @@ export class GameScene extends Phaser.Scene {
       this.spawnBullet(this.player.x + 10, this.player.y - 18, 170);
     }
 
+    this.statsManager.recordShot();
     this.player.consumeFireCooldown(rapidFire);
     this.audioManager.playShoot();
   }
@@ -259,7 +329,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private destroyEnemy(enemy: Enemy): void {
-    const awarded = this.scoreManager.add(enemy.getPoints(), this.powerUpManager.isActive('scoreMultiplier'));
+    this.comboManager.onKill();
+    this.statsManager.recordKill();
+    this.statsManager.recordCombo(this.comboManager.streak);
+
+    const awarded = this.scoreManager.add(
+      enemy.getPoints(),
+      this.powerUpManager.isActive('scoreMultiplier'),
+      this.comboManager.multiplier,
+    );
     const x = enemy.x;
     const y = enemy.y;
     const tint = enemy.getTintColor();
@@ -267,12 +345,20 @@ export class GameScene extends Phaser.Scene {
     this.createExplosion(x, y, tint);
     this.audioManager.playExplosion();
     this.cameras.main.shake(90, 0.003);
-    new FloatingText(this, x, y, `+${awarded}`, '#ffffff');
+
+    const label = this.comboManager.multiplier > 1 ? `+${awarded} ×${this.comboManager.multiplier}` : `+${awarded}`;
+    new FloatingText(this, x, y, label, '#ffffff');
 
     enemy.destroy();
 
     if (this.powerUpManager.shouldDrop()) {
       this.spawnPowerUp(x, y);
+    }
+
+    // Announce new combo tiers
+    const crossed = this.comboManager.crossedThreshold();
+    if (crossed !== null) {
+      new FloatingText(this, GAME_WIDTH / 2, GAME_HEIGHT / 2, `${crossed}× COMBO!`, '#ffe050');
     }
   }
 
@@ -299,6 +385,71 @@ export class GameScene extends Phaser.Scene {
     }
 
     powerUp.configure(type, x, y);
+  }
+
+  private destroyBoss(boss: Boss): void {
+    const awarded = this.scoreManager.add(500, this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
+    this.comboManager.onKill();
+    this.statsManager.recordBossKill();
+    this.statsManager.recordKill();
+    this.createExplosion(boss.x, boss.y - 10, 0xff3366);
+    this.createExplosion(boss.x - 20, boss.y + 10, 0xff8888);
+    this.createExplosion(boss.x + 20, boss.y + 10, 0xffffff);
+    this.cameras.main.shake(500, 0.022);
+    this.cameras.main.flash(250, 255, 80, 80, false);
+    new FloatingText(this, boss.x, boss.y, `BOSS DOWN! +${awarded}`, '#ff88aa');
+    this.bossManager.destroyBoss();
+    this.hud.setBossHp(null);
+    this.spawnPowerUp(boss.x, boss.y + 20);
+  }
+
+  private spawnEnemyBullet(x: number, y: number, velocityX: number, velocityY: number): void {
+    let eb = this.enemyBullets.get(x, y) as EnemyBullet | null;
+    if (!eb) {
+      eb = new EnemyBullet(this, x, y);
+      this.enemyBullets.add(eb);
+    }
+    eb.fire(x, y, velocityX, velocityY);
+  }
+
+  private updateEnemyShooting(frameDelta: number): void {
+    for (const child of this.enemies.getChildren()) {
+      const enemy = child as Enemy;
+      if (enemy.active) {
+        enemy.updateShootTimer(frameDelta, (x, y) => this.spawnEnemyBullet(x, y, 0, 300));
+      }
+    }
+  }
+
+  private updateComboDisplay(): void {
+    const streak = this.comboManager.streak;
+    if (streak >= 3) {
+      this.comboText
+        .setText(`×${this.comboManager.multiplier} COMBO (${streak})`)
+        .setAlpha(1)
+        .setX(this.player.x);
+    } else {
+      this.comboText.setAlpha(0);
+    }
+  }
+
+  private showBossWarning(): void {
+    const warn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, '⚠ BOSS INCOMING ⚠', {
+      color: '#ff3366',
+      fontFamily: 'Arial Black, sans-serif',
+      fontSize: '36px',
+      stroke: '#09101f',
+      strokeThickness: 7,
+    }).setOrigin(0.5).setDepth(30).setAlpha(0);
+
+    this.tweens.add({
+      targets: warn,
+      alpha: { from: 0, to: 1 },
+      yoyo: true,
+      repeat: 3,
+      duration: 300,
+      onComplete: () => warn.destroy(),
+    });
   }
 
   private fireLaserBlast(): void {
@@ -340,7 +491,10 @@ export class GameScene extends Phaser.Scene {
             const awarded = this.scoreManager.add(
               enemy.getPoints(),
               this.powerUpManager.isActive('scoreMultiplier'),
+              this.comboManager.multiplier,
             );
+            this.comboManager.onKill();
+            this.statsManager.recordKill();
             this.createExplosion(enemy.x, enemy.y, enemy.getTintColor());
             new FloatingText(this, enemy.x, enemy.y, `+${awarded}`, '#ffffff');
             enemy.destroy();
@@ -382,17 +536,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private finishGame(reason: 'time' | 'death' = 'death'): void {
-    if (this.gameFinished) {
-      return;
-    }
+    if (this.gameFinished) return;
 
     this.gameFinished = true;
     this.audioManager.destroy();
+    const summary = this.statsManager.getSummary();
+    const grade = this.statsManager.computeGrade(this.scoreManager.getScore());
     this.scene.start('GameOverScene', {
       score: this.scoreManager.getScore(),
       highScore: this.scoreManager.getHighScore(),
       mode: this.mode,
       reason,
+      grade,
+      summary,
     });
   }
 }

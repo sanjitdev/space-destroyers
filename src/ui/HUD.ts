@@ -16,6 +16,13 @@ export class HUD extends Phaser.GameObjects.Container {
   private readonly timeText: Phaser.GameObjects.Text;
   private readonly powerUpText: Phaser.GameObjects.Text;
   private readonly muteText: Phaser.GameObjects.Text;
+  private readonly bossBarBg: Phaser.GameObjects.Rectangle;
+  private readonly bossBarFill: Phaser.GameObjects.Rectangle;
+  private readonly bossLabel: Phaser.GameObjects.Text;
+
+  private static readonly BOSS_BAR_W = GAME_WIDTH - 40;
+  private static readonly BOSS_BAR_H = 14;
+  private static readonly BOSS_BAR_Y = 140;
 
   constructor(scene: Phaser.Scene, onToggleMute: () => void) {
     super(scene, 0, 0);
@@ -32,7 +39,14 @@ export class HUD extends Phaser.GameObjects.Container {
     this.muteText = scene.add.text(GAME_WIDTH - 24, 24, '🔊', { ...textStyle, fontSize: '26px' }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     this.muteText.on('pointerdown', onToggleMute);
 
-    this.add([topBar, this.scoreText, this.highScoreText, this.livesText, this.timeText, this.powerUpText, this.muteText]);
+    // Boss health bar (hidden by default)
+    this.bossBarBg = scene.add.rectangle(20, HUD.BOSS_BAR_Y, HUD.BOSS_BAR_W, HUD.BOSS_BAR_H, 0x330011).setOrigin(0).setVisible(false);
+    this.bossBarFill = scene.add.rectangle(20, HUD.BOSS_BAR_Y, HUD.BOSS_BAR_W, HUD.BOSS_BAR_H, 0xff3366).setOrigin(0).setVisible(false);
+    this.bossLabel = scene.add.text(GAME_WIDTH / 2, HUD.BOSS_BAR_Y - 16, 'BOSS', {
+      ...textStyle, fontSize: '13px', color: '#ff88aa',
+    }).setOrigin(0.5, 0).setVisible(false);
+
+    this.add([topBar, this.scoreText, this.highScoreText, this.livesText, this.timeText, this.powerUpText, this.muteText, this.bossBarBg, this.bossBarFill, this.bossLabel]);
   }
 
   sync(score: number, highScore: number, lives: number, timeRemaining: number, powerUps: string[], muted: boolean): void {
@@ -42,5 +56,19 @@ export class HUD extends Phaser.GameObjects.Container {
     this.timeText.setText(timeRemaining < 0 ? 'Time: ∞' : `Time: ${timeRemaining}`);
     this.powerUpText.setText(`Power-Ups: ${powerUps.length > 0 ? powerUps.join(' • ') : 'None'}`);
     this.muteText.setText(muted ? '🔇' : '🔊');
+  }
+
+  setBossHp(fraction: number | null): void {
+    const visible = fraction !== null;
+    this.bossBarBg.setVisible(visible);
+    this.bossBarFill.setVisible(visible);
+    this.bossLabel.setVisible(visible);
+    if (fraction !== null) {
+      this.bossBarFill.setDisplaySize(
+        Math.max(0, HUD.BOSS_BAR_W * fraction),
+        HUD.BOSS_BAR_H,
+      );
+      this.bossBarFill.setFillStyle(fraction > 0.5 ? 0xff3366 : 0xff8800);
+    }
   }
 }

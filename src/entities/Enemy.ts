@@ -7,6 +7,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private baseSpeed = 0;
   private baseTint = 0xffffff;
   private pointValue = 0;
+  private shootCooldownMs = 0;
+  private readonly shootIntervalMs: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, type: EnemyType, speedMultiplier: number) {
     super(scene, x, y, ENEMY_CONFIGS[type].texture);
@@ -15,6 +17,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.allowGravity = false;
+    // Small enemies don't shoot; medium fires every ~3s, heavy every ~2s
+    this.shootIntervalMs = type === 'heavy' ? 2_000 : type === 'medium' ? 3_200 : 0;
+    this.shootCooldownMs = this.shootIntervalMs * (0.5 + Math.random() * 0.5);
     this.configure(type, speedMultiplier);
   }
 
@@ -46,6 +51,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   applyMovementFactor(factor: number): void {
     this.setVelocityY(this.baseSpeed * factor);
+  }
+
+  updateShootTimer(deltaMs: number, onFire: (x: number, y: number) => void): void {
+    if (this.shootIntervalMs === 0 || this.y < 0) return;
+    this.shootCooldownMs -= deltaMs;
+    if (this.shootCooldownMs <= 0) {
+      this.shootCooldownMs = this.shootIntervalMs;
+      onFire(this.x, this.y + 16);
+    }
   }
 
   damage(amount: number): boolean {

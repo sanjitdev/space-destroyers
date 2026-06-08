@@ -18,6 +18,16 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('space-bg', 64, 64);
     graphics.clear();
 
+    // Sparser, dimmer far-layer parallax stars
+    graphics.fillStyle(0x000000, 0);
+    graphics.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 24; i += 1) {
+      graphics.fillStyle(0xaed9ff, 0.35 + (i % 3) * 0.1);
+      graphics.fillCircle((i * 31 + 7) % 128, (i * 47 + 13) % 128, 0.7);
+    }
+    graphics.generateTexture('space-bg-far', 128, 128);
+    graphics.clear();
+
     graphics.fillStyle(0x6cf3ff, 1);
     graphics.fillTriangle(18, 0, 0, 34, 18, 26);
     graphics.fillTriangle(18, 0, 36, 34, 18, 26);
@@ -70,6 +80,33 @@ export class BootScene extends Phaser.Scene {
     graphics.fillStyle(0xffffff, 1);
     graphics.fillCircle(3, 3, 3);
     graphics.generateTexture('particle', 6, 6);
+    graphics.clear();
+
+    // Enemy bullet — small red teardrop
+    graphics.fillStyle(0xff4444, 1);
+    graphics.fillRect(1, 0, 6, 14);
+    graphics.fillStyle(0xff8888, 0.8);
+    graphics.fillRect(2, 0, 4, 6);
+    graphics.generateTexture('enemy-bullet', 8, 14);
+    graphics.clear();
+
+    // Boss — large menacing skull-ish shape
+    graphics.fillStyle(0xff3366, 1);
+    graphics.fillRoundedRect(2, 8, 60, 44, 8);
+    graphics.fillTriangle(10, 8, 18, 0, 26, 8);
+    graphics.fillTriangle(36, 8, 44, 0, 52, 8);
+    graphics.fillStyle(0x0a0018, 1);
+    graphics.fillEllipse(17, 28, 16, 16);
+    graphics.fillEllipse(47, 28, 16, 16);
+    graphics.fillStyle(0xff88aa, 0.9);
+    graphics.fillEllipse(17, 26, 8, 8);
+    graphics.fillEllipse(47, 26, 8, 8);
+    graphics.fillStyle(0xff3366, 0.7);
+    graphics.fillRect(12, 44, 40, 5);
+    graphics.fillStyle(0x0a0018, 1);
+    graphics.fillRect(20, 44, 6, 5);
+    graphics.fillRect(36, 44, 6, 5);
+    graphics.generateTexture('boss', 64, 52);
     graphics.clear();
 
     // ── Viper — slender, fast (orange-red, 1.2× speed) ────────────
