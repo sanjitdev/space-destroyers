@@ -246,10 +246,120 @@ export class MenuScene extends Phaser.Scene {
       refreshMute();
     });
 
+    // ── Power-up info button ──────────────────────────────────────
+    const infoBtn = this.add.text(GAME_WIDTH / 2, 655, 'ⓘ  POWER-UPS', {
+      fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#4a7a9a',
+      letterSpacing: 2,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    infoBtn.on('pointerover', () => infoBtn.setColor('#6cf3ff'));
+    infoBtn.on('pointerout',  () => infoBtn.setColor('#4a7a9a'));
+    infoBtn.on('pointerdown', () => this.showPowerUpOverlay());
+
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 28, '← → to move  ·  SPACE or FIRE button to shoot', {
       fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#2a4060',
     }).setOrigin(0.5);
 
     this.input.keyboard?.once('keydown-SPACE', () => startGame('timed'));
+  }
+
+  private showPowerUpOverlay(): void {
+    const W = GAME_WIDTH;
+    const panelW = 430;
+    const panelH = 508;
+    const panelX = (W - panelW) / 2;
+    const panelY = (GAME_HEIGHT - panelH) / 2;
+
+    const container = this.add.container(0, 0).setDepth(60).setAlpha(0);
+
+    // Semi-transparent backdrop — tap to close
+    const backdrop = this.add.rectangle(W / 2, GAME_HEIGHT / 2, W, GAME_HEIGHT, 0x000000, 0.78)
+      .setInteractive();
+    container.add(backdrop);
+
+    // Glass panel
+    const gfx = this.add.graphics();
+    gfx.fillStyle(0x030c1c, 0.97);
+    gfx.fillRoundedRect(panelX, panelY, panelW, panelH, 18);
+    gfx.lineStyle(1.5, 0x0f2a50, 1);
+    gfx.strokeRoundedRect(panelX, panelY, panelW, panelH, 18);
+    gfx.lineStyle(1, 0x6cf3ff, 0.18);
+    gfx.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 16);
+    container.add(gfx);
+
+    // Title
+    container.add(this.add.text(W / 2, panelY + 26, 'POWER-UPS', {
+      fontFamily: FONT, fontSize: '20px', color: '#6cf3ff',
+      stroke: '#09101f', strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 14, fill: true },
+    }).setOrigin(0.5));
+
+    // Divider
+    container.add(this.add.rectangle(W / 2, panelY + 48, panelW - 36, 1, 0x1a3060, 0.8));
+
+    // Power-up rows
+    const rows = [
+      { key: 'powerup-rapidFire',       label: 'Rapid Fire',     desc: 'Halves fire cooldown for 10 s' },
+      { key: 'powerup-tripleShot',      label: 'Triple Shot',    desc: '3 bullets per shot for 10 s' },
+      { key: 'powerup-shield',          label: 'Shield',         desc: 'Absorbs one hit' },
+      { key: 'powerup-scoreMultiplier', label: '2× Score',       desc: 'Doubles kill points for 10 s' },
+      { key: 'powerup-slowTime',        label: 'Slow Time',      desc: 'Halves all enemy speed for 10 s' },
+      { key: 'powerup-laser',           label: 'Mega Laser',     desc: 'Fires an instant full-width beam' },
+      { key: 'powerup-extraLife',       label: '+1 Life',        desc: 'Gain one life (max 5)' },
+    ] as const;
+
+    const startY = panelY + 58;
+    const rowH   = 52;
+    const iconX  = panelX + 36;
+    const textX  = panelX + 66;
+
+    rows.forEach(({ key, label, desc }, i) => {
+      const y = startY + i * rowH;
+
+      // Alternating row tint
+      if (i % 2 === 0) {
+        container.add(
+          this.add.rectangle(W / 2, y + rowH / 2, panelW - 16, rowH, 0x061222, 0.55).setOrigin(0.5),
+        );
+      }
+
+      container.add(this.add.image(iconX, y + rowH / 2, key).setScale(0.80));
+
+      container.add(this.add.text(textX, y + rowH / 2 - 12, label, {
+        fontFamily: FONT, fontSize: '14px', color: '#d8f0ff',
+        stroke: '#09101f', strokeThickness: 3,
+      }));
+
+      container.add(this.add.text(textX, y + rowH / 2 + 8, desc, {
+        fontFamily: 'Arial, sans-serif', fontSize: '12px', color: '#4e7a99',
+      }));
+    });
+
+    // Boss-storage note
+    const noteY = panelY + panelH - 52;
+    container.add(this.add.rectangle(W / 2, noteY + 14, panelW - 36, 1, 0x1a3060, 0.5));
+    container.add(this.add.text(W / 2, noteY + 22, 'During boss fights, power-ups are banked (max 3).  Press  E  to use the first stored one instantly.', {
+      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#3e6a88',
+      align: 'center', wordWrap: { width: panelW - 48 },
+    }).setOrigin(0.5, 0));
+
+    // Close hint
+    container.add(this.add.text(W / 2, panelY + panelH - 10, 'TAP ANYWHERE TO CLOSE', {
+      fontFamily: FONT, fontSize: '9px', color: '#1e3a50', letterSpacing: 4,
+    }).setOrigin(0.5, 1));
+
+    // Fade in
+    this.tweens.add({ targets: container, alpha: 1, duration: 160 });
+
+    const close = (): void => {
+      escKey?.off('down', close);
+      this.tweens.add({
+        targets: container, alpha: 0, duration: 120,
+        onComplete: () => container.destroy(),
+      });
+    };
+
+    backdrop.on('pointerdown', close);
+    const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    escKey?.once('down', close);
   }
 }

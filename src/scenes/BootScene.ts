@@ -210,22 +210,17 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('enemy-heavy', 52, 44);
     graphics.clear();
 
-    // ── Power-up textures — colored diamond base + unique white icon ────────
+    // ── Power-up textures — white icon on transparent base; tinted at runtime ─
     const D = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
-    const diam28 = [D(14, 0), D(28, 14), D(14, 28), D(0, 14)];
 
-    // rapidFire — cyan, two stacked upward speed-chevrons
-    graphics.fillStyle(0x57e2e5, 1);
-    graphics.fillPoints(diam28, true);
+    // rapidFire — two stacked upward speed-chevrons
     graphics.fillStyle(0xffffff, 1);
     graphics.fillTriangle(14, 5, 5, 13, 23, 13);
     graphics.fillTriangle(14, 13, 5, 21, 23, 21);
     graphics.generateTexture('powerup-rapidFire', 28, 28);
     graphics.clear();
 
-    // tripleShot — green, three upward arrows (left/center/right)
-    graphics.fillStyle(0x7cff6b, 1);
-    graphics.fillPoints(diam28, true);
+    // tripleShot — three upward arrows (left/center/right)
     graphics.fillStyle(0xffffff, 1);
     graphics.fillTriangle(7, 9, 3, 16, 11, 16);
     graphics.fillRect(5, 16, 4, 6);
@@ -236,12 +231,10 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('powerup-tripleShot', 28, 28);
     graphics.clear();
 
-    // shield — blue, kite shield with cross
-    graphics.fillStyle(0x4dd2ff, 1);
-    graphics.fillPoints(diam28, true);
+    // shield — kite shield outline with cross; dark inner recess
     graphics.fillStyle(0xffffff, 1);
     graphics.fillPoints([D(14,5),D(21,9),D(21,18),D(14,25),D(7,18),D(7,9)], true);
-    graphics.fillStyle(0x4dd2ff, 1);
+    graphics.fillStyle(0x000000, 0.65);
     graphics.fillPoints([D(14,8),D(18,11),D(18,17),D(14,22),D(10,17),D(10,11)], true);
     graphics.fillStyle(0xffffff, 1);
     graphics.fillRect(12, 10, 4, 13);
@@ -249,9 +242,7 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('powerup-shield', 28, 28);
     graphics.clear();
 
-    // scoreMultiplier — gold, 5-point star
-    graphics.fillStyle(0xfff275, 1);
-    graphics.fillPoints(diam28, true);
+    // scoreMultiplier — 5-point star
     graphics.fillStyle(0xffffff, 1);
     graphics.fillPoints([
       D(14,4),  D(17,10), D(24,11), D(19,16), D(21,23),
@@ -260,9 +251,7 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('powerup-scoreMultiplier', 28, 28);
     graphics.clear();
 
-    // slowTime — purple, hourglass
-    graphics.fillStyle(0xc492ff, 1);
-    graphics.fillPoints(diam28, true);
+    // slowTime — hourglass
     graphics.fillStyle(0xffffff, 1);
     graphics.fillTriangle(5, 5, 23, 5, 14, 14);
     graphics.fillTriangle(5, 23, 23, 23, 14, 14);
@@ -270,18 +259,14 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('powerup-slowTime', 28, 28);
     graphics.clear();
 
-    // laser — periwinkle, vertical beam + wide crossbar
-    graphics.fillStyle(0x8899ff, 1);
-    graphics.fillPoints(diam28, true);
+    // laser — vertical beam + wide crossbar
     graphics.fillStyle(0xffffff, 1);
     graphics.fillRect(12, 3, 4, 22);
     graphics.fillRect(4, 11, 20, 6);
     graphics.generateTexture('powerup-laser', 28, 28);
     graphics.clear();
 
-    // extraLife — pink, heart shape
-    graphics.fillStyle(0xff5c8a, 1);
-    graphics.fillPoints(diam28, true);
+    // extraLife — heart shape
     graphics.fillStyle(0xffffff, 1);
     graphics.fillPoints([
       D(14,24), D(5,15),  D(5,10),  D(8,7),
