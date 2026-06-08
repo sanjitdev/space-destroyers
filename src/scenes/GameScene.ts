@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private enemyBullets!: Phaser.Physics.Arcade.Group;
   private powerUps!: Phaser.Physics.Arcade.Group;
+  private bossGroup!: Phaser.Physics.Arcade.Group;
   private hud!: HUD;
   private scoreManager!: ScoreManager;
   private timerManager!: TimerManager;
@@ -48,6 +49,7 @@ export class GameScene extends Phaser.Scene {
   private touchMoveX: number | null = null;
   private shootHeld = false;
   private gameFinished = false;
+  private levelTransition = false;
   private mode: GameMode = 'timed';
   private themeBulletTint = 0xffffff;
 
@@ -77,6 +79,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies = this.physics.add.group({ runChildUpdate: true });
     this.enemyBullets = this.physics.add.group({ classType: EnemyBullet, maxSize: 40, runChildUpdate: true });
     this.powerUps = this.physics.add.group({ classType: PowerUp, maxSize: 16, runChildUpdate: true });
+    this.bossGroup = this.physics.add.group();
 
     const ship = SHIP_CONFIGS[Storage.getSelectedShipIndex()];
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 72, ship);
@@ -125,6 +128,9 @@ export class GameScene extends Phaser.Scene {
     this.backgroundNebula.tilePositionY -= 0.07;
     this.backgroundFar.tilePositionY -= 0.35;
     this.background.tilePositionY -= 0.9;
+
+    if (this.levelTransition) return;
+
     this.audioManager.update(frameDelta);
     this.timerManager.update(frameDelta);
     this.powerUpManager.update(frameDelta);
@@ -134,6 +140,8 @@ export class GameScene extends Phaser.Scene {
 
     // Boss spawn check — kill-based
     if (this.bossManager.checkSpawn(this.statsManager.getEnemiesKilled())) {
+      const spawnedBoss = this.bossManager.getBoss();
+      if (spawnedBoss) this.bossGroup.add(spawnedBoss);
       this.showBossWarning(
         this.bossManager.getActiveBossName(),
         this.bossManager.getActiveBossLevel(),
@@ -203,9 +211,9 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Player bullets vs boss
-    this.physics.add.overlap(this.bullets, this.getBossAsGroup(), (bulletObject) => {
+    this.physics.add.overlap(this.bullets, this.bossGroup, (bulletObject, bossObject) => {
       const bullet = bulletObject as Bullet;
-      const boss = this.bossManager.getBoss();
+      const boss = bossObject as Boss;
       if (!bullet.active || !boss?.active) return;
 
       bullet.deactivate();
@@ -257,12 +265,6 @@ export class GameScene extends Phaser.Scene {
       this.audioManager.playPowerUp();
       this.syncHud();
     });
-  }
-
-  /** Wraps the live boss in a static array so overlap() can reference it. */
-  private getBossAsGroup(): Phaser.GameObjects.GameObject[] {
-    const boss = this.bossManager.getBoss();
-    return boss ? [boss] : [];
   }
 
   private handlePlayerDamage(): void {
@@ -426,6 +428,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private destroyBoss(boss: Boss): void {
+    const bossLevel = boss.getLevel();
     const awarded = this.scoreManager.add(500, this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
     this.comboManager.onKill();
     this.statsManager.recordBossKill();
@@ -436,9 +439,72 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(500, 0.022);
     this.cameras.main.flash(250, 255, 80, 80, false);
     new FloatingText(this, boss.x, boss.y, `BOSS DOWN! +${awarded}`, '#ff88aa');
+    this.bossGroup.remove(boss, false, false);
     this.bossManager.destroyBoss();
     this.hud.setBossHp(null);
-    this.spawnPowerUp(boss.x, boss.y + 20);
+    this.startLevelTransition(bossLevel);
+  }
+
+  private startLevelTransition(bossLevel: number): void {
+    this.levelTransition = true;
+
+    // Wipe the battlefield
+    this.enemies.clear(true, true);
+    this.enemyBullets.clear(true, true);
+    this.bullets.clear(true, true);
+    this.powerUps.clear(true, true);
+    this.homingBullets = [];
+
+    // Freeze the player physics body so the tween can move it off-screen freely
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    body.enable = false;
+
+    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, `LEVEL ${bossLevel} CLEAR!`, {
+      fontFamily: 'Arial Black, sans-serif',
+      fontSize: '42px',
+      color: '#ffe050',
+      stroke: '#09101f',
+      strokeThickness: 8,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 28, fill: true },
+    }).setOrigin(0.5).setDepth(30).setAlpha(0).setScrollFactor(0);
+
+    this.tweens.add({
+      targets: banner,
+      alpha: { from: 0, to: 1 },
+      scaleX: { from: 0.5, to: 1 },
+      scaleY: { from: 0.5, to: 1 },
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+
+    // After a short beat, fly the ship upward off-screen
+    this.time.delayedCall(900, () => {
+      this.tweens.add({
+        targets: this.player,
+        y: -120,
+        duration: 650,
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+          this.tweens.add({ targets: banner, alpha: 0, duration: 300 });
+
+          // Reposition below the screen, then fly back in
+          this.player.setPosition(GAME_WIDTH / 2, GAME_HEIGHT + 100);
+
+          this.time.delayedCall(350, () => {
+            body.reset(GAME_WIDTH / 2, GAME_HEIGHT + 100);
+            this.tweens.add({
+              targets: this.player,
+              y: GAME_HEIGHT - 72,
+              duration: 650,
+              ease: 'Cubic.easeOut',
+              onComplete: () => {                body.enable = true;                banner.destroy();
+                this.levelTransition = false;
+              },
+            });
+          });
+        },
+      });
+    });
   }
 
   private spawnEnemyBullet(x: number, y: number, velocityX: number, velocityY: number): void {

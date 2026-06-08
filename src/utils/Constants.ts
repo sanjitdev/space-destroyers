@@ -118,6 +118,7 @@ export type BossSpecialAbility =
 export interface BossLevelConfig {
   readonly level: number;
   readonly name: string;
+  readonly texture: string;
   readonly maxHp: number;
   readonly phase2Hp: number;
   readonly lateralSpeed: number;
@@ -133,14 +134,14 @@ export interface BossLevelConfig {
 }
 
 export const BOSS_LEVEL_CONFIGS: readonly BossLevelConfig[] = [
-  { level: 1,  name: 'Sentinel',   maxHp: 60,  phase2Hp: 30,  lateralSpeed: 90,  phase2LateralSpeed: 150, fireIntervalMs: 1400, phase2FireIntervalMs: 800,  phase2ShotCount: 3, glowTint: 0xff2200, phase2GlowTint: 0xff5500, bodyTint: null,     specialAbility: 'none',         killsRequired: 15  },
-  { level: 2,  name: 'Hydra',      maxHp: 90,  phase2Hp: 45,  lateralSpeed: 100, phase2LateralSpeed: 160, fireIntervalMs: 1200, phase2FireIntervalMs: 700,  phase2ShotCount: 3, glowTint: 0xaa00ff, phase2GlowTint: 0xdd44ff, bodyTint: 0xcc44ff, specialAbility: 'drone_spawn',  killsRequired: 35  },
-  { level: 3,  name: 'Pulsar',     maxHp: 120, phase2Hp: 60,  lateralSpeed: 110, phase2LateralSpeed: 170, fireIntervalMs: 1000, phase2FireIntervalMs: 600,  phase2ShotCount: 3, glowTint: 0x00aaff, phase2GlowTint: 0x44ddff, bodyTint: 0x22ccff, specialAbility: 'emp_pulse',    killsRequired: 60  },
-  { level: 4,  name: 'Reaper',     maxHp: 150, phase2Hp: 75,  lateralSpeed: 120, phase2LateralSpeed: 180, fireIntervalMs: 900,  phase2FireIntervalMs: 550,  phase2ShotCount: 3, glowTint: 0xff0000, phase2GlowTint: 0xff4400, bodyTint: 0xff2200, specialAbility: 'aimed',        killsRequired: 90  },
-  { level: 5,  name: 'Titan',      maxHp: 190, phase2Hp: 95,  lateralSpeed: 100, phase2LateralSpeed: 165, fireIntervalMs: 800,  phase2FireIntervalMs: 500,  phase2ShotCount: 5, glowTint: 0xff6600, phase2GlowTint: 0xff9900, bodyTint: 0xff8800, specialAbility: 'meteor_shower', killsRequired: 125 },
-  { level: 6,  name: 'Phantom',    maxHp: 230, phase2Hp: 115, lateralSpeed: 130, phase2LateralSpeed: 190, fireIntervalMs: 700,  phase2FireIntervalMs: 450,  phase2ShotCount: 3, glowTint: 0x9900ff, phase2GlowTint: 0xcc44ff, bodyTint: 0xbb00ff, specialAbility: 'teleport',     killsRequired: 165 },
-  { level: 7,  name: 'Nexus',      maxHp: 280, phase2Hp: 140, lateralSpeed: 140, phase2LateralSpeed: 200, fireIntervalMs: 650,  phase2FireIntervalMs: 400,  phase2ShotCount: 5, glowTint: 0x00ffcc, phase2GlowTint: 0x44ffdd, bodyTint: 0x00ddaa, specialAbility: 'summon',       killsRequired: 210 },
-  { level: 8,  name: 'Devourer',   maxHp: 330, phase2Hp: 165, lateralSpeed: 150, phase2LateralSpeed: 210, fireIntervalMs: 600,  phase2FireIntervalMs: 350,  phase2ShotCount: 5, glowTint: 0x660099, phase2GlowTint: 0xaa00ff, bodyTint: 0x8800bb, specialAbility: 'homing',       killsRequired: 260 },
-  { level: 9,  name: 'Apocalypse', maxHp: 390, phase2Hp: 195, lateralSpeed: 160, phase2LateralSpeed: 220, fireIntervalMs: 500,  phase2FireIntervalMs: 300,  phase2ShotCount: 7, glowTint: 0xff0033, phase2GlowTint: 0xff4466, bodyTint: 0xff0055, specialAbility: 'bulletHell',   killsRequired: 315 },
-  { level: 10, name: 'Omega',      maxHp: 500, phase2Hp: 250, lateralSpeed: 170, phase2LateralSpeed: 230, fireIntervalMs: 450,  phase2FireIntervalMs: 250,  phase2ShotCount: 7, glowTint: 0xffcc00, phase2GlowTint: 0xffee44, bodyTint: 0xffdd00, specialAbility: 'omega',        killsRequired: 375 },
+  { level: 1,  name: 'Sentinel',   texture: 'boss-1',  maxHp: 60,  phase2Hp: 30,  lateralSpeed: 90,  phase2LateralSpeed: 150, fireIntervalMs: 1400, phase2FireIntervalMs: 800,  phase2ShotCount: 3, glowTint: 0xff2200, phase2GlowTint: 0xff5500, bodyTint: null, specialAbility: 'none',          killsRequired: 15  },
+  { level: 2,  name: 'Hydra',      texture: 'boss-2',  maxHp: 90,  phase2Hp: 45,  lateralSpeed: 100, phase2LateralSpeed: 160, fireIntervalMs: 1200, phase2FireIntervalMs: 700,  phase2ShotCount: 3, glowTint: 0x44ff00, phase2GlowTint: 0x88ff44, bodyTint: null, specialAbility: 'drone_spawn',   killsRequired: 35  },
+  { level: 3,  name: 'Pulsar',     texture: 'boss-3',  maxHp: 120, phase2Hp: 60,  lateralSpeed: 110, phase2LateralSpeed: 170, fireIntervalMs: 1000, phase2FireIntervalMs: 600,  phase2ShotCount: 3, glowTint: 0x0099ff, phase2GlowTint: 0x44ddff, bodyTint: null, specialAbility: 'emp_pulse',     killsRequired: 60  },
+  { level: 4,  name: 'Reaper',     texture: 'boss-4',  maxHp: 150, phase2Hp: 75,  lateralSpeed: 120, phase2LateralSpeed: 180, fireIntervalMs: 900,  phase2FireIntervalMs: 550,  phase2ShotCount: 3, glowTint: 0xaa00ff, phase2GlowTint: 0xdd44ff, bodyTint: null, specialAbility: 'aimed',         killsRequired: 90  },
+  { level: 5,  name: 'Titan',      texture: 'boss-5',  maxHp: 190, phase2Hp: 95,  lateralSpeed: 100, phase2LateralSpeed: 165, fireIntervalMs: 800,  phase2FireIntervalMs: 500,  phase2ShotCount: 5, glowTint: 0xff6600, phase2GlowTint: 0xff9900, bodyTint: null, specialAbility: 'meteor_shower', killsRequired: 125 },
+  { level: 6,  name: 'Phantom',    texture: 'boss-6',  maxHp: 230, phase2Hp: 115, lateralSpeed: 130, phase2LateralSpeed: 190, fireIntervalMs: 700,  phase2FireIntervalMs: 450,  phase2ShotCount: 3, glowTint: 0x00ddcc, phase2GlowTint: 0x44ffee, bodyTint: null, specialAbility: 'teleport',      killsRequired: 165 },
+  { level: 7,  name: 'Nexus',      texture: 'boss-7',  maxHp: 280, phase2Hp: 140, lateralSpeed: 140, phase2LateralSpeed: 200, fireIntervalMs: 650,  phase2FireIntervalMs: 400,  phase2ShotCount: 5, glowTint: 0x00ff44, phase2GlowTint: 0x44ff88, bodyTint: null, specialAbility: 'summon',        killsRequired: 210 },
+  { level: 8,  name: 'Devourer',   texture: 'boss-8',  maxHp: 330, phase2Hp: 165, lateralSpeed: 150, phase2LateralSpeed: 210, fireIntervalMs: 600,  phase2FireIntervalMs: 350,  phase2ShotCount: 5, glowTint: 0xff0055, phase2GlowTint: 0xff4488, bodyTint: null, specialAbility: 'homing',        killsRequired: 260 },
+  { level: 9,  name: 'Apocalypse', texture: 'boss-9',  maxHp: 390, phase2Hp: 195, lateralSpeed: 160, phase2LateralSpeed: 220, fireIntervalMs: 500,  phase2FireIntervalMs: 300,  phase2ShotCount: 7, glowTint: 0xff0000, phase2GlowTint: 0xff4400, bodyTint: null, specialAbility: 'bulletHell',    killsRequired: 315 },
+  { level: 10, name: 'Omega',      texture: 'boss-10', maxHp: 500, phase2Hp: 250, lateralSpeed: 170, phase2LateralSpeed: 230, fireIntervalMs: 450,  phase2FireIntervalMs: 250,  phase2ShotCount: 7, glowTint: 0xffcc00, phase2GlowTint: 0xffee44, bodyTint: null, specialAbility: 'omega',         killsRequired: 375 },
 ];

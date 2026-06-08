@@ -363,7 +363,554 @@ export class BootScene extends Phaser.Scene {
     graphics.fillStyle(0xff99bb, 1);
     graphics.fillEllipse(48, 50, 6, 4);
 
-    graphics.generateTexture('boss', 96, 80);
+    graphics.generateTexture('boss-1', 96, 80);
+    graphics.clear();
+
+    // ── Boss 2 — Hydra: Three-headed serpent (poison green) ─────────────
+    // Wide organic body base
+    graphics.fillStyle(0x050f06, 1);
+    graphics.fillEllipse(48, 70, 88, 28);
+    graphics.fillStyle(0x081808, 1);
+    graphics.fillEllipse(48, 64, 72, 24);
+
+    // Three neck columns (trapezoid, angled outward)
+    graphics.fillStyle(0x0c2a10, 1);
+    graphics.fillPoints([{ x: 10, y: 60 }, { x: 26, y: 60 }, { x: 20, y: 24 }, { x: 6, y: 24 }], true);
+    graphics.fillPoints([{ x: 40, y: 58 }, { x: 56, y: 58 }, { x: 52, y: 18 }, { x: 44, y: 18 }], true);
+    graphics.fillPoints([{ x: 70, y: 60 }, { x: 86, y: 60 }, { x: 90, y: 24 }, { x: 76, y: 24 }], true);
+
+    // Scale ridges on necks
+    graphics.fillStyle(0x164422, 1);
+    for (let i = 0; i < 4; i++) {
+      graphics.fillEllipse(16, 54 - i * 9, 14, 6);
+      graphics.fillEllipse(48, 52 - i * 9, 14, 6);
+      graphics.fillEllipse(80, 54 - i * 9, 14, 6);
+    }
+
+    // Three serpent heads
+    graphics.fillStyle(0x0a2a10, 1);
+    graphics.fillEllipse(15, 18, 32, 22);
+    graphics.fillEllipse(48, 10, 32, 22);
+    graphics.fillEllipse(81, 18, 32, 22);
+
+    // Head crests / frills
+    graphics.fillStyle(0x1a5522, 1);
+    graphics.fillTriangle(0, 22, 15, 4, 30, 22);
+    graphics.fillTriangle(32, 12, 48, -2, 64, 12);
+    graphics.fillTriangle(66, 22, 81, 4, 96, 22);
+
+    // Eye sockets
+    graphics.fillStyle(0x020503, 1);
+    graphics.fillEllipse(9, 16, 12, 9);  graphics.fillEllipse(21, 16, 12, 9);
+    graphics.fillEllipse(42, 8, 12, 9);  graphics.fillEllipse(54, 8, 12, 9);
+    graphics.fillEllipse(75, 16, 12, 9); graphics.fillEllipse(87, 16, 12, 9);
+
+    // Poison eyes
+    graphics.fillStyle(0x66ff00, 1);
+    graphics.fillEllipse(9, 16, 8, 6);  graphics.fillEllipse(21, 16, 8, 6);
+    graphics.fillEllipse(42, 8, 8, 6);  graphics.fillEllipse(54, 8, 8, 6);
+    graphics.fillEllipse(75, 16, 8, 6); graphics.fillEllipse(87, 16, 8, 6);
+    graphics.fillStyle(0xccff22, 1);
+    graphics.fillEllipse(9, 16, 4, 4);  graphics.fillEllipse(21, 16, 4, 4);
+    graphics.fillEllipse(42, 8, 4, 4);  graphics.fillEllipse(54, 8, 4, 4);
+    graphics.fillEllipse(75, 16, 4, 4); graphics.fillEllipse(87, 16, 4, 4);
+
+    // Vertical slit pupils
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillRect(8, 13, 2, 7); graphics.fillRect(20, 13, 2, 7);
+    graphics.fillRect(41, 5, 2, 7); graphics.fillRect(53, 5, 2, 7);
+    graphics.fillRect(74, 13, 2, 7); graphics.fillRect(86, 13, 2, 7);
+
+    // Fangs (4 per head)
+    graphics.fillStyle(0xccffcc, 1);
+    for (let i = 0; i < 4; i++) {
+      graphics.fillTriangle(4 + i * 6, 26, 8 + i * 6, 26, 6 + i * 6, 34);
+      graphics.fillTriangle(36 + i * 6, 18, 40 + i * 6, 18, 38 + i * 6, 26);
+      graphics.fillTriangle(68 + i * 6, 26, 72 + i * 6, 26, 70 + i * 6, 34);
+    }
+
+    // Forked tongues
+    graphics.fillStyle(0xff1144, 1);
+    graphics.fillTriangle(11, 34, 15, 34, 9, 44);  graphics.fillTriangle(15, 34, 19, 34, 21, 44);
+    graphics.fillTriangle(44, 26, 48, 26, 42, 36); graphics.fillTriangle(48, 26, 52, 26, 54, 36);
+    graphics.fillTriangle(75, 34, 79, 34, 73, 44); graphics.fillTriangle(79, 34, 83, 34, 85, 44);
+
+    graphics.generateTexture('boss-2', 96, 80);
+    graphics.clear();
+
+    // ── Boss 3 — Pulsar: Crystal energy being (cyan/blue) ───────────────
+    // Outer crystal shell (dark octagon)
+    graphics.fillStyle(0x000c1a, 1);
+    graphics.fillPoints([
+      { x: 48, y: 0 }, { x: 76, y: 10 }, { x: 94, y: 32 },
+      { x: 94, y: 50 }, { x: 76, y: 72 }, { x: 20, y: 72 },
+      { x: 2, y: 50 }, { x: 2, y: 32 }, { x: 20, y: 10 },
+    ], true);
+
+    // Second crystal layer
+    graphics.fillStyle(0x001628, 1);
+    graphics.fillPoints([
+      { x: 48, y: 6 }, { x: 72, y: 16 }, { x: 86, y: 34 },
+      { x: 86, y: 48 }, { x: 72, y: 66 }, { x: 24, y: 66 },
+      { x: 10, y: 48 }, { x: 10, y: 34 }, { x: 24, y: 16 },
+    ], true);
+
+    // Facet highlights
+    graphics.fillStyle(0x002244, 1);
+    graphics.fillTriangle(48, 6, 24, 16, 10, 34);
+    graphics.fillTriangle(48, 6, 72, 16, 86, 34);
+
+    // Glowing energy core (nested layers)
+    graphics.fillStyle(0x003a7a, 1); graphics.fillEllipse(48, 40, 60, 46);
+    graphics.fillStyle(0x0066bb, 1); graphics.fillEllipse(48, 40, 46, 34);
+    graphics.fillStyle(0x0099ee, 1); graphics.fillEllipse(48, 40, 30, 22);
+    graphics.fillStyle(0x33ccff, 1); graphics.fillEllipse(48, 40, 16, 12);
+    graphics.fillStyle(0x99eeff, 1); graphics.fillEllipse(48, 40, 7, 5);
+    graphics.fillStyle(0xffffff, 1); graphics.fillEllipse(48, 40, 3, 3);
+
+    // Crystal spike protrusions (cardinal)
+    graphics.fillStyle(0x0055aa, 1);
+    graphics.fillTriangle(40, 0, 56, 0, 48, 8);
+    graphics.fillTriangle(40, 72, 56, 72, 48, 80);
+    graphics.fillTriangle(0, 32, 8, 44, 2, 44);
+    graphics.fillTriangle(88, 32, 94, 44, 96, 44);
+
+    // Diagonal structural facets
+    graphics.fillStyle(0x0077cc, 1);
+    graphics.fillTriangle(24, 16, 48, 8, 48, 38);
+    graphics.fillTriangle(72, 16, 48, 8, 48, 38);
+    graphics.fillStyle(0x0044aa, 1);
+    graphics.fillTriangle(10, 48, 14, 34, 32, 40);
+    graphics.fillTriangle(86, 48, 82, 34, 64, 40);
+
+    graphics.generateTexture('boss-3', 96, 80);
+    graphics.clear();
+
+    // ── Boss 4 — Reaper: Hooded specter with scythe wings (black/purple) ─
+    // Sweeping cloak silhouette
+    graphics.fillStyle(0x050006, 1);
+    graphics.fillPoints([
+      { x: 48, y: 4 }, { x: 64, y: 8 }, { x: 88, y: 20 },
+      { x: 96, y: 48 }, { x: 82, y: 78 }, { x: 14, y: 78 },
+      { x: 0, y: 48 }, { x: 8, y: 20 }, { x: 32, y: 8 },
+    ], true);
+
+    // Inner cloak depth
+    graphics.fillStyle(0x080008, 1);
+    graphics.fillPoints([
+      { x: 48, y: 10 }, { x: 62, y: 14 }, { x: 82, y: 24 },
+      { x: 88, y: 48 }, { x: 76, y: 74 }, { x: 20, y: 74 },
+      { x: 8, y: 48 }, { x: 14, y: 24 }, { x: 34, y: 14 },
+    ], true);
+
+    // Scythe upper blades
+    graphics.fillStyle(0x1a001e, 1);
+    graphics.fillTriangle(8, 20, 0, 2, 24, 18);
+    graphics.fillTriangle(88, 20, 96, 2, 72, 18);
+    graphics.fillStyle(0x550066, 1);
+    graphics.fillTriangle(8, 20, 0, 4, 14, 18);
+    graphics.fillTriangle(88, 20, 96, 4, 82, 18);
+
+    // Scythe lower hooks
+    graphics.fillStyle(0x1a001e, 1);
+    graphics.fillTriangle(0, 50, 10, 66, 18, 52);
+    graphics.fillTriangle(96, 50, 86, 66, 78, 52);
+    graphics.fillStyle(0x440055, 1);
+    graphics.fillTriangle(2, 52, 8, 64, 14, 52);
+    graphics.fillTriangle(94, 52, 88, 64, 82, 52);
+
+    // Hood shadow
+    graphics.fillStyle(0x020002, 1);
+    graphics.fillEllipse(48, 34, 54, 44);
+
+    // Skull face
+    graphics.fillStyle(0x28003a, 1); graphics.fillEllipse(48, 28, 42, 36);
+    graphics.fillStyle(0x36004e, 1); graphics.fillEllipse(48, 26, 32, 28);
+
+    // Eye sockets
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillEllipse(36, 24, 15, 11); graphics.fillEllipse(60, 24, 15, 11);
+
+    // Soul-fire eyes (purple)
+    graphics.fillStyle(0x9900ff, 1);
+    graphics.fillEllipse(36, 24, 10, 7); graphics.fillEllipse(60, 24, 10, 7);
+    graphics.fillStyle(0xcc44ff, 1);
+    graphics.fillEllipse(36, 24, 5, 4);  graphics.fillEllipse(60, 24, 5, 4);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillEllipse(36, 24, 2, 2);  graphics.fillEllipse(60, 24, 2, 2);
+
+    // Nasal void
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillTriangle(44, 34, 52, 34, 48, 40);
+
+    // Jaw / maw
+    graphics.fillStyle(0x1a0022, 1);
+    graphics.fillRoundedRect(30, 40, 36, 14, { tl: 0, tr: 0, bl: 6, br: 6 });
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillRoundedRect(33, 40, 30, 10, { tl: 0, tr: 0, bl: 4, br: 4 });
+
+    // Jagged teeth
+    graphics.fillStyle(0x9966bb, 1);
+    for (let i = 0; i < 5; i++) {
+      graphics.fillTriangle(33 + i * 6, 40, 37 + i * 6, 40, 35 + i * 6, 47);
+    }
+
+    // Cloak hem energy glow
+    graphics.fillStyle(0x6600aa, 0.5);
+    graphics.fillRect(16, 70, 64, 6);
+
+    graphics.generateTexture('boss-4', 96, 80);
+    graphics.clear();
+
+    // ── Boss 5 — Titan: Armored dreadnought (dark orange/iron) ──────────
+    // Main hull
+    graphics.fillStyle(0x120800, 1);
+    graphics.fillPoints([
+      { x: 48, y: 2 }, { x: 70, y: 8 }, { x: 82, y: 18 },
+      { x: 82, y: 68 }, { x: 68, y: 78 }, { x: 28, y: 78 },
+      { x: 14, y: 68 }, { x: 14, y: 18 }, { x: 26, y: 8 },
+    ], true);
+
+    // Armor plating
+    graphics.fillStyle(0x1e0e04, 1);
+    graphics.fillRect(20, 14, 56, 56);
+
+    // Side weapon wing pods
+    graphics.fillStyle(0x160a02, 1);
+    graphics.fillPoints([{ x: 0, y: 22 }, { x: 14, y: 16 }, { x: 14, y: 54 }, { x: 0, y: 60 }], true);
+    graphics.fillPoints([{ x: 82, y: 16 }, { x: 96, y: 22 }, { x: 96, y: 60 }, { x: 82, y: 54 }], true);
+
+    // Left weapon barrels
+    graphics.fillStyle(0x0a0600, 1);
+    graphics.fillRect(0, 24, 12, 7); graphics.fillRect(0, 36, 12, 7); graphics.fillRect(0, 48, 12, 7);
+    graphics.fillStyle(0xff5500, 1);
+    graphics.fillRect(0, 25, 4, 5);  graphics.fillRect(0, 37, 4, 5);  graphics.fillRect(0, 49, 4, 5);
+
+    // Right weapon barrels
+    graphics.fillStyle(0x0a0600, 1);
+    graphics.fillRect(84, 24, 12, 7); graphics.fillRect(84, 36, 12, 7); graphics.fillRect(84, 48, 12, 7);
+    graphics.fillStyle(0xff6600, 1);
+    graphics.fillRect(92, 25, 4, 5);  graphics.fillRect(92, 37, 4, 5);  graphics.fillRect(92, 49, 4, 5);
+
+    // Armor panel lines
+    graphics.fillStyle(0x2a1206, 1);
+    graphics.fillRect(22, 18, 52, 5); graphics.fillRect(22, 54, 52, 5);
+    graphics.fillRect(22, 26, 5, 22); graphics.fillRect(69, 26, 5, 22);
+
+    // Command bridge
+    graphics.fillStyle(0x2a1006, 1); graphics.fillRoundedRect(30, 20, 36, 24, 4);
+    graphics.fillStyle(0x381606, 1); graphics.fillRoundedRect(32, 22, 32, 20, 3);
+
+    // Cockpit viewport
+    graphics.fillStyle(0x000a1c, 1); graphics.fillRect(34, 24, 28, 5);
+    graphics.fillStyle(0xff3300, 0.7); graphics.fillRect(35, 25, 7, 3);
+    graphics.fillStyle(0xff5500, 0.7); graphics.fillRect(44, 25, 7, 3);
+    graphics.fillStyle(0xff3300, 0.7); graphics.fillRect(53, 25, 7, 3);
+
+    // Central reactor core
+    graphics.fillStyle(0xff2200, 0.4); graphics.fillEllipse(48, 46, 24, 18);
+    graphics.fillStyle(0xff5500, 0.7); graphics.fillEllipse(48, 46, 14, 10);
+    graphics.fillStyle(0xff9944, 1);   graphics.fillEllipse(48, 46, 6, 5);
+
+    // Forward heavy cannons
+    graphics.fillStyle(0x0e0602, 1);
+    graphics.fillRect(34, 2, 9, 14); graphics.fillRect(53, 2, 9, 14);
+    graphics.fillStyle(0xff4400, 1);
+    graphics.fillRect(34, 2, 9, 5);  graphics.fillRect(53, 2, 9, 5);
+
+    // Engine exhaust nozzles
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillEllipse(30, 74, 14, 8); graphics.fillEllipse(48, 76, 14, 8); graphics.fillEllipse(66, 74, 14, 8);
+    graphics.fillStyle(0xff4400, 0.9);
+    graphics.fillEllipse(30, 76, 10, 5); graphics.fillEllipse(48, 78, 10, 5); graphics.fillEllipse(66, 76, 10, 5);
+    graphics.fillStyle(0xff9944, 1);
+    graphics.fillEllipse(30, 77, 5, 3); graphics.fillEllipse(48, 79, 5, 3); graphics.fillEllipse(66, 77, 5, 3);
+
+    graphics.generateTexture('boss-5', 96, 80);
+    graphics.clear();
+
+    // ── Boss 6 — Phantom: Ethereal wraith (dark violet/teal) ────────────
+    // Outer ghostly mass
+    graphics.fillStyle(0x06011a, 1);
+    graphics.fillEllipse(48, 32, 82, 58);
+
+    // Ghost bell body
+    graphics.fillStyle(0x0c0430, 1);
+    graphics.fillEllipse(48, 28, 66, 48);
+
+    // Crown tendrils (upward wisps)
+    graphics.fillStyle(0x160842, 1);
+    graphics.fillTriangle(26, 16, 20, -6, 32, 14);
+    graphics.fillTriangle(36, 8,  30, -10, 42, 6);
+    graphics.fillTriangle(48, 4,  42, -12, 54, 2);
+    graphics.fillTriangle(60, 8,  54, -10, 66, 6);
+    graphics.fillTriangle(70, 16, 64, -6, 76, 14);
+
+    // Trailing bottom tendrils
+    graphics.fillStyle(0x0a0328, 1);
+    graphics.fillPoints([{ x: 14, y: 46 }, { x: 22, y: 46 }, { x: 10, y: 80 }, { x: 2, y: 78 }], true);
+    graphics.fillPoints([{ x: 28, y: 52 }, { x: 36, y: 52 }, { x: 30, y: 80 }, { x: 20, y: 80 }], true);
+    graphics.fillPoints([{ x: 43, y: 54 }, { x: 53, y: 54 }, { x: 50, y: 80 }, { x: 40, y: 80 }], true);
+    graphics.fillPoints([{ x: 60, y: 52 }, { x: 68, y: 52 }, { x: 76, y: 80 }, { x: 64, y: 80 }], true);
+    graphics.fillPoints([{ x: 74, y: 46 }, { x: 82, y: 46 }, { x: 94, y: 78 }, { x: 86, y: 80 }], true);
+
+    // Inner face / core
+    graphics.fillStyle(0x120540, 1);
+    graphics.fillEllipse(48, 30, 52, 38);
+
+    // Eye sockets
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillEllipse(33, 26, 20, 14); graphics.fillEllipse(63, 26, 20, 14);
+
+    // Haunting teal eyes
+    graphics.fillStyle(0x00ddaa, 1);
+    graphics.fillEllipse(33, 26, 14, 10); graphics.fillEllipse(63, 26, 14, 10);
+    graphics.fillStyle(0x88ffee, 1);
+    graphics.fillEllipse(33, 26, 7, 6);   graphics.fillEllipse(63, 26, 7, 6);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillEllipse(33, 26, 3, 3);   graphics.fillEllipse(63, 26, 3, 3);
+
+    // Wailing maw
+    graphics.fillStyle(0x000000, 1);   graphics.fillEllipse(48, 42, 24, 16);
+    graphics.fillStyle(0x00aacc, 0.25); graphics.fillEllipse(48, 43, 14, 9);
+
+    // Teeth
+    graphics.fillStyle(0x88ddcc, 1);
+    for (let i = 0; i < 4; i++) {
+      graphics.fillTriangle(38 + i * 5, 36, 41 + i * 5, 36, 39 + i * 5, 42);
+      graphics.fillTriangle(38 + i * 5, 48, 41 + i * 5, 48, 39 + i * 5, 42);
+    }
+
+    graphics.generateTexture('boss-6', 96, 80);
+    graphics.clear();
+
+    // ── Boss 7 — Nexus: Cybernetic mind (green circuits) ────────────────
+    // Outer hexagonal casing
+    graphics.fillStyle(0x001400, 1);
+    graphics.fillPoints([
+      { x: 48, y: 0 }, { x: 86, y: 20 }, { x: 86, y: 60 },
+      { x: 48, y: 80 }, { x: 10, y: 60 }, { x: 10, y: 20 },
+    ], true);
+
+    // Inner casing layer
+    graphics.fillStyle(0x002200, 1);
+    graphics.fillPoints([
+      { x: 48, y: 6 }, { x: 80, y: 24 }, { x: 80, y: 56 },
+      { x: 48, y: 74 }, { x: 16, y: 56 }, { x: 16, y: 24 },
+    ], true);
+
+    // Circuit traces
+    graphics.fillStyle(0x004400, 1);
+    graphics.fillRect(16, 38, 64, 2);
+    graphics.fillRect(46, 6, 4, 68);
+    graphics.fillRect(16, 24, 26, 2); graphics.fillRect(54, 24, 26, 2);
+    graphics.fillRect(16, 54, 26, 2); graphics.fillRect(54, 54, 26, 2);
+    graphics.fillRect(26, 24, 2, 16); graphics.fillRect(68, 24, 2, 16);
+    graphics.fillRect(26, 40, 2, 16); graphics.fillRect(68, 40, 2, 16);
+
+    // Circuit junction nodes
+    graphics.fillStyle(0x00aa00, 1);
+    const junctions: [number, number][] = [
+      [16,38],[80,38],[48,6],[48,74],[26,24],[70,24],[26,56],[70,56],
+    ];
+    for (const [jx, jy] of junctions) graphics.fillRect(jx - 2, jy - 2, 5, 5);
+
+    // Brain hemispheres
+    graphics.fillStyle(0x002a00, 1); graphics.fillEllipse(48, 38, 48, 38);
+    graphics.fillStyle(0x003800, 1);
+    graphics.fillEllipse(35, 36, 22, 18); graphics.fillEllipse(61, 36, 22, 18);
+
+    // Hemisphere folds
+    graphics.fillStyle(0x005500, 1);
+    graphics.fillRect(46, 18, 4, 40);
+    graphics.fillEllipse(35, 32, 14, 6); graphics.fillEllipse(35, 42, 14, 6);
+    graphics.fillEllipse(61, 32, 14, 6); graphics.fillEllipse(61, 42, 14, 6);
+
+    // All-seeing mechanical eye
+    graphics.fillStyle(0x000000, 1); graphics.fillEllipse(48, 38, 20, 20);
+    graphics.fillStyle(0x00ee00, 1); graphics.fillEllipse(48, 38, 14, 14);
+    graphics.fillStyle(0x44ff44, 1); graphics.fillEllipse(48, 38, 8, 8);
+    graphics.fillStyle(0xaaffaa, 1); graphics.fillEllipse(48, 38, 4, 4);
+    graphics.fillStyle(0xffffff, 1); graphics.fillEllipse(48, 38, 2, 2);
+
+    // Corner sensor nodes
+    graphics.fillStyle(0x00cc44, 1);
+    const sensors: [number, number][] = [[16, 24], [80, 24], [16, 56], [80, 56]];
+    for (const [sx, sy] of sensors) {
+      graphics.fillEllipse(sx, sy, 8, 8);
+      graphics.fillStyle(0x00ff66, 1); graphics.fillEllipse(sx, sy, 4, 4);
+      graphics.fillStyle(0x00cc44, 1);
+    }
+
+    graphics.generateTexture('boss-7', 96, 80);
+    graphics.clear();
+
+    // ── Boss 8 — Devourer: All-consuming maw (black/crimson) ────────────
+    // Outer tentacle mass
+    graphics.fillStyle(0x080006, 1);
+    graphics.fillEllipse(48, 40, 90, 78);
+
+    // Top tentacles
+    graphics.fillStyle(0x100010, 1);
+    graphics.fillPoints([{ x: 30, y: 20 }, { x: 38, y: 22 }, { x: 24, y: 0 },  { x: 16, y: 4 }], true);
+    graphics.fillPoints([{ x: 42, y: 16 }, { x: 50, y: 16 }, { x: 46, y: -2 }, { x: 38, y: 0 }], true);
+    graphics.fillPoints([{ x: 54, y: 20 }, { x: 62, y: 22 }, { x: 76, y: 4 },  { x: 68, y: 0 }], true);
+
+    // Side tentacles
+    graphics.fillPoints([{ x: 8, y: 32 },  { x: 14, y: 40 }, { x: 0, y: 52 },   { x: -4, y: 44 }], true);
+    graphics.fillPoints([{ x: 78, y: 32 }, { x: 84, y: 40 }, { x: 100, y: 52 }, { x: 96, y: 44 }], true);
+
+    // Bottom tentacles
+    graphics.fillPoints([{ x: 18, y: 62 }, { x: 28, y: 66 }, { x: 12, y: 82 }, { x: 4, y: 78 }], true);
+    graphics.fillPoints([{ x: 42, y: 68 }, { x: 54, y: 68 }, { x: 48, y: 84 }, { x: 38, y: 84 }], true);
+    graphics.fillPoints([{ x: 68, y: 62 }, { x: 78, y: 66 }, { x: 90, y: 78 }, { x: 84, y: 82 }], true);
+
+    // Main body
+    graphics.fillStyle(0x0e000a, 1); graphics.fillEllipse(48, 40, 70, 60);
+
+    // Outer lip ring of the maw
+    graphics.fillStyle(0x220018, 1); graphics.fillEllipse(48, 40, 58, 48);
+
+    // The maw — enormous gaping mouth
+    graphics.fillStyle(0x000000, 1); graphics.fillEllipse(48, 40, 50, 42);
+
+    // Inner glowing throat abyss
+    graphics.fillStyle(0x3a0028, 0.7); graphics.fillEllipse(48, 42, 32, 26);
+    graphics.fillStyle(0x880040, 0.6); graphics.fillEllipse(48, 44, 16, 12);
+    graphics.fillStyle(0xcc0055, 0.5); graphics.fillEllipse(48, 46, 7, 6);
+
+    // Upper fangs
+    graphics.fillStyle(0xddccff, 1);
+    for (let i = 0; i < 6; i++) {
+      graphics.fillTriangle(20 + i * 9, 20, 26 + i * 9, 20, 23 + i * 9, 32);
+    }
+    // Lower fangs
+    for (let i = 0; i < 6; i++) {
+      graphics.fillTriangle(20 + i * 9, 60, 26 + i * 9, 60, 23 + i * 9, 48);
+    }
+
+    // Primary eyes (upper flanks)
+    graphics.fillStyle(0xff0044, 1);
+    graphics.fillEllipse(18, 26, 14, 10); graphics.fillEllipse(78, 26, 14, 10);
+    graphics.fillStyle(0xff6688, 1);
+    graphics.fillEllipse(18, 26, 8, 6);   graphics.fillEllipse(78, 26, 8, 6);
+
+    // Secondary side eyes
+    graphics.fillStyle(0xff0033, 1);
+    graphics.fillEllipse(10, 40, 9, 9); graphics.fillEllipse(86, 40, 9, 9);
+    graphics.fillStyle(0xff88aa, 1);
+    graphics.fillEllipse(10, 40, 5, 5); graphics.fillEllipse(86, 40, 5, 5);
+
+    graphics.generateTexture('boss-8', 96, 80);
+    graphics.clear();
+
+    // ── Boss 9 — Apocalypse: Eldritch horror with many eyes (dark crimson) ─
+    // Chaotic star-burst silhouette
+    graphics.fillStyle(0x0c0002, 1);
+    graphics.fillPoints([
+      { x: 48, y: 0 },  { x: 62, y: 6 },  { x: 80, y: 2 },  { x: 84, y: 16 },
+      { x: 96, y: 24 }, { x: 90, y: 38 }, { x: 96, y: 52 }, { x: 82, y: 58 },
+      { x: 80, y: 72 }, { x: 64, y: 68 }, { x: 56, y: 80 }, { x: 48, y: 72 },
+      { x: 40, y: 80 }, { x: 32, y: 68 }, { x: 16, y: 72 }, { x: 14, y: 58 },
+      { x: 0, y: 52 },  { x: 6, y: 38 },  { x: 0, y: 24 },  { x: 12, y: 16 },
+      { x: 16, y: 2 },  { x: 34, y: 6 },
+    ], true);
+
+    // Inner mass
+    graphics.fillStyle(0x160006, 1);
+    graphics.fillEllipse(48, 40, 74, 62);
+
+    // Pulsating vein network
+    graphics.fillStyle(0x550022, 1);
+    graphics.fillRect(22, 39, 52, 2); graphics.fillRect(47, 14, 2, 52);
+    graphics.fillRect(26, 22, 2, 36); graphics.fillRect(68, 22, 2, 36);
+    graphics.fillRect(30, 22, 40, 2); graphics.fillRect(30, 56, 40, 2);
+
+    // Scattered eyes (all shapes)
+    const eyes: [number, number, number, number][] = [
+      [48, 22, 18, 13],
+      [24, 34, 12, 9], [72, 34, 12, 9],
+      [32, 52, 10, 8], [64, 52, 10, 8],
+      [48, 58, 13, 10],
+      [12, 44, 8, 7],  [84, 44, 8, 7],
+      [38, 38, 7, 6],  [58, 38, 7, 6],
+    ];
+    graphics.fillStyle(0x000000, 1);
+    for (const [ex, ey, ew, eh] of eyes) graphics.fillEllipse(ex, ey, ew + 4, eh + 4);
+    graphics.fillStyle(0x880000, 1);
+    for (const [ex, ey, ew, eh] of eyes) graphics.fillEllipse(ex, ey, ew, eh);
+    graphics.fillStyle(0xff1100, 1);
+    for (const [ex, ey, ew, eh] of eyes) graphics.fillEllipse(ex, ey, ew * 0.6, eh * 0.6);
+    graphics.fillStyle(0xff8866, 1);
+    for (const [ex, ey, ew, eh] of eyes) graphics.fillEllipse(ex, ey, ew * 0.28, eh * 0.28);
+
+    // Outer spike tips
+    graphics.fillStyle(0x220008, 1);
+    graphics.fillTriangle(4, 4, 20, 10, 10, 18);   graphics.fillTriangle(92, 4, 86, 18, 76, 10);
+    graphics.fillTriangle(4, 72, 10, 58, 20, 68);  graphics.fillTriangle(92, 72, 76, 68, 86, 58);
+
+    // Central void / reality tear
+    graphics.fillStyle(0x000000, 1);    graphics.fillEllipse(48, 40, 14, 12);
+    graphics.fillStyle(0x880000, 0.5);  graphics.fillEllipse(48, 40, 8, 7);
+
+    graphics.generateTexture('boss-9', 96, 80);
+    graphics.clear();
+
+    // ── Boss 10 — Omega: Cosmic perfection (golden mandala) ─────────────
+    // Outer void
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillEllipse(48, 40, 96, 80);
+
+    // Outermost gold ring
+    graphics.fillStyle(0xcc8800, 1); graphics.fillEllipse(48, 40, 92, 76);
+    graphics.fillStyle(0x000000, 1); graphics.fillEllipse(48, 40, 80, 66);
+
+    // Eight geometric spoke arms
+    graphics.fillStyle(0x885500, 1);
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const x1 = 48 + Math.cos(angle) * 10;
+      const y1 = 40 + Math.sin(angle) * 8;
+      const x2 = 48 + Math.cos(angle) * 38;
+      const y2 = 40 + Math.sin(angle) * 30;
+      const x3 = 48 + Math.cos(angle + 0.22) * 36;
+      const y3 = 40 + Math.sin(angle + 0.22) * 28;
+      graphics.fillTriangle(x1, y1, x2, y2, x3, y3);
+    }
+
+    // Second ring
+    graphics.fillStyle(0xddaa00, 1); graphics.fillEllipse(48, 40, 68, 56);
+    graphics.fillStyle(0x000000, 1); graphics.fillEllipse(48, 40, 58, 48);
+
+    // Third ring
+    graphics.fillStyle(0xeecc00, 1); graphics.fillEllipse(48, 40, 50, 42);
+    graphics.fillStyle(0x000000, 1); graphics.fillEllipse(48, 40, 42, 34);
+
+    // Outer ring gem diamonds (8 positions)
+    graphics.fillStyle(0xffdd44, 1);
+    for (let i = 0; i < 8; i++) {
+      const gx = 48 + Math.cos((i / 8) * Math.PI * 2) * 43;
+      const gy = 40 + Math.sin((i / 8) * Math.PI * 2) * 35;
+      graphics.fillRect(gx - 3, gy - 3, 6, 6);
+    }
+
+    // Inner ring gem diamonds (8 offset)
+    graphics.fillStyle(0xffee88, 1);
+    for (let i = 0; i < 8; i++) {
+      const gx = 48 + Math.cos(((i + 0.5) / 8) * Math.PI * 2) * 32;
+      const gy = 40 + Math.sin(((i + 0.5) / 8) * Math.PI * 2) * 26;
+      graphics.fillRect(gx - 2, gy - 2, 4, 4);
+    }
+
+    // Cosmic central eye (nested rings)
+    graphics.fillStyle(0x110800, 1); graphics.fillEllipse(48, 40, 38, 30);
+    graphics.fillStyle(0x553300, 1); graphics.fillEllipse(48, 40, 28, 22);
+    graphics.fillStyle(0xbb6600, 1); graphics.fillEllipse(48, 40, 20, 16);
+    graphics.fillStyle(0xffaa00, 1); graphics.fillEllipse(48, 40, 12, 10);
+    graphics.fillStyle(0xffdd66, 1); graphics.fillEllipse(48, 40, 6, 5);
+    graphics.fillStyle(0xffffff, 1); graphics.fillEllipse(48, 40, 2, 2);
+
+    graphics.generateTexture('boss-10', 96, 80);
     graphics.clear();
 
     // ── Viper — slender, fast (orange-red, 1.2× speed) ────────────

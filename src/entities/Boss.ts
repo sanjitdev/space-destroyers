@@ -15,7 +15,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   private readonly glow: Phaser.GameObjects.Sprite;
 
   constructor(scene: Phaser.Scene, config: BossLevelConfig) {
-    super(scene, GAME_WIDTH / 2, -80, 'boss');
+    super(scene, GAME_WIDTH / 2, -80, config.texture);
     this.cfg = config;
     this.hp = config.maxHp;
     this.lateralSpeed = config.lateralSpeed;
@@ -29,7 +29,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.setScale(2.0).setDepth(4);
     if (config.bodyTint !== null) this.setTint(config.bodyTint);
 
-    this.glow = scene.add.sprite(this.x, this.y, 'boss')
+    this.glow = scene.add.sprite(this.x, this.y, config.texture)
       .setScale(2.35).setAlpha(0.30)
       .setTint(config.glowTint).setDepth(3)
       .setBlendMode(Phaser.BlendModes.ADD);
