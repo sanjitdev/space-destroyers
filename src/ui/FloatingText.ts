@@ -5,21 +5,32 @@ export class FloatingText extends Phaser.GameObjects.Text {
     super(scene, x, y, text, {
       color,
       fontFamily: 'Arial Black, sans-serif',
-      fontSize: '18px',
-      stroke: '#09101f',
+      fontSize: '20px',
+      stroke: '#060c1a',
       strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color, blur: 10, fill: true },
     });
 
     scene.add.existing(this);
-    this.setOrigin(0.5);
+    this.setOrigin(0.5).setDepth(22).setScale(1.35);
 
+    // Pop to normal size, then float up and fade
     scene.tweens.add({
       targets: this,
-      y: y - 30,
-      alpha: 0,
-      duration: 650,
-      ease: 'Cubic.easeOut',
-      onComplete: () => this.destroy(),
+      scale: 1,
+      duration: 110,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        scene.tweens.add({
+          targets: this,
+          y: y - 48,
+          alpha: 0,
+          duration: 680,
+          ease: 'Cubic.easeOut',
+          onComplete: () => this.destroy(),
+        });
+      },
     });
   }
 }
+
