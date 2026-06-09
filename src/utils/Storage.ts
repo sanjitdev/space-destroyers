@@ -1,9 +1,10 @@
-import { SHIP_CONFIGS, THEME_IDS, type ThemeId } from './Constants';
+import { DIFFICULTY_IDS, SHIP_CONFIGS, THEME_IDS, type DifficultyId, type ThemeId } from './Constants';
 
 const HIGH_SCORE_KEY = 'space-destroyers-high-score';
 const MUTED_KEY = 'space-destroyers-muted';
 const THEME_KEY = 'space-destroyers-theme';
 const SHIP_KEY = 'space-destroyers-ship';
+const DIFFICULTY_KEY = 'space-destroyers-difficulty';
 const GAMES_PLAYED_KEY = 'space-destroyers-games-played';
 const TOTAL_KILLS_KEY = 'space-destroyers-total-kills';
 const TOTAL_BOSSES_KEY = 'space-destroyers-total-bosses';
@@ -58,6 +59,19 @@ export const Storage = {
   setSelectedShipIndex(index: number): void {
     withStorage(undefined, () => {
       window.localStorage.setItem(SHIP_KEY, String(index));
+      return undefined;
+    });
+  },
+
+  getDifficulty(): DifficultyId {
+    return withStorage<DifficultyId>('normal', () => {
+      const stored = window.localStorage.getItem(DIFFICULTY_KEY);
+      return (DIFFICULTY_IDS as readonly string[]).includes(stored ?? '') ? (stored as DifficultyId) : 'normal';
+    });
+  },
+  setDifficulty(difficulty: DifficultyId): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(DIFFICULTY_KEY, difficulty);
       return undefined;
     });
   },

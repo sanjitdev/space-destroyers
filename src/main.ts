@@ -1,10 +1,14 @@
-import Phaser from 'phaser';
+import type PhaserType from 'phaser';
 import './style.css';
-import { BootScene } from './scenes/BootScene';
-import { GameOverScene } from './scenes/GameOverScene';
-import { GameScene } from './scenes/GameScene';
-import { MenuScene } from './scenes/MenuScene';
 import { GAME_HEIGHT, GAME_WIDTH } from './utils/Constants';
+
+const [{ default: Phaser }, { BootScene }, { MenuScene }, { GameScene }, { GameOverScene }] = await Promise.all([
+  import('phaser'),
+  import('./scenes/BootScene'),
+  import('./scenes/MenuScene'),
+  import('./scenes/GameScene'),
+  import('./scenes/GameOverScene'),
+]);
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -28,7 +32,7 @@ const game = new Phaser.Game({
 if (import.meta.env.DEV) {
   (
     window as Window & {
-      __SPACE_BLASTER__?: Phaser.Game;
+      __SPACE_BLASTER__?: PhaserType.Game;
     }
   ).__SPACE_BLASTER__ = game;
 }

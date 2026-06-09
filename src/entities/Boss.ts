@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { type BossLevelConfig, type BossSpecialAbility, GAME_WIDTH } from '../utils/Constants';
 
+export type BossTelegraphPattern = 'aimed' | 'fan' | 'volley';
+
 export class Boss extends Phaser.Physics.Arcade.Sprite {
   private hp: number;
   private phase: 1 | 2 = 1;
@@ -8,6 +10,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   private lateralSpeed: number;
   private fireTimerMs: number;
   private fireIntervalMs: number;
+  private telegraphLeadMs = 260;
+  private telegraphTriggered = false;
   private specialTimerMs: number;
   private teleportCooldownMs = 4_000;
   private justEnteredPhase2 = false;
@@ -59,6 +63,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     playerY: number,
     onFire: (x: number, y: number, vx: number, vy: number) => void,
     onSpecial: (ability: BossSpecialAbility) => void,
+    onTelegraph: (pattern: BossTelegraphPattern) => void,
   ): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
 
@@ -84,8 +89,13 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     // Firing
     this.fireTimerMs -= deltaMs;
+    if (!this.telegraphTriggered && this.fireTimerMs <= this.telegraphLeadMs) {
+      this.telegraphTriggered = true;
+      onTelegraph(this.getTelegraphPattern());
+    }
     if (this.fireTimerMs <= 0) {
       this.fireTimerMs = this.fireIntervalMs;
+      this.telegraphTriggered = false;
       this.performAttack(playerX, playerY, onFire);
     }
 
@@ -215,5 +225,16 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
         onFire(this.x + 90, this.y + 10,  130, 230);
       }
     }
+  }
+
+  private getTelegraphPattern(): BossTelegraphPattern {
+    const ability = this.cfg.specialAbility;
+    if (ability === 'aimed' || ability === 'omega') {
+      return 'aimed';
+    }
+    if (ability === 'bulletHell' && this.phase === 2) {
+      return 'fan';
+    }
+    return 'volley';
   }
 }

@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import {
+  DIFFICULTY_IDS,
+  DIFFICULTY_PRESETS,
   GAME_HEIGHT,
   GAME_WIDTH,
   POWER_UP_TYPES,
@@ -7,6 +9,7 @@ import {
   THEME_IDS,
   THEMES,
   getPlayerLevel,
+  type DifficultyId,
   type GameMode,
 } from '../utils/Constants';
 import { Storage } from '../utils/Storage';
@@ -152,7 +155,7 @@ export class MenuScene extends Phaser.Scene {
         ? selectedShipIdx
         : Storage.getSelectedShipIndex();
       Storage.setSelectedShipIndex(effectiveIdx);
-      this.scene.start('GameScene', { mode });
+      this.scene.start('GameScene', { mode, difficulty: Storage.getDifficulty() });
     };
 
     const modeCardW = 210;
@@ -275,7 +278,7 @@ export class MenuScene extends Phaser.Scene {
   private showSettingsOverlay(bgSprite: Phaser.GameObjects.TileSprite): void {
     const W = GAME_WIDTH;
     const panelW = 420;
-    const panelH = 300;
+    const panelH = 380;
     const panelX = (W - panelW) / 2;
     const panelY = (GAME_HEIGHT - panelH) / 2;
 
@@ -379,8 +382,75 @@ export class MenuScene extends Phaser.Scene {
       });
     });
 
+    // ── Divider + Difficulty ────────────────────────────────────
+    const difficultyLineY = panelY + 182;
+    container.add(this.add.rectangle(W / 2, difficultyLineY, panelW - 36, 1, 0x1a3060, 0.6));
+    container.add(this.add.text(panelX + 22, difficultyLineY + 12, 'DIFFICULTY', {
+      fontFamily: FONT, fontSize: '10px', color: '#9ac8e8', letterSpacing: 3,
+      stroke: '#04101e', strokeThickness: 3,
+    }));
+
+    let selectedDifficulty: DifficultyId = Storage.getDifficulty();
+    const difficultyButtons: Array<{ id: DifficultyId; gfx: Phaser.GameObjects.Graphics; label: Phaser.GameObjects.Text; desc: Phaser.GameObjects.Text }> = [];
+
+    const diffCardW = 118;
+    const diffCardH = 56;
+    const diffGap = 10;
+    const diffStartX = panelX + 22;
+    const diffY = difficultyLineY + 32;
+
+    const drawDifficultyCard = (item: { id: DifficultyId; gfx: Phaser.GameObjects.Graphics; label: Phaser.GameObjects.Text; desc: Phaser.GameObjects.Text }, hover = false): void => {
+      const isSelected = item.id === selectedDifficulty;
+      const preset = DIFFICULTY_PRESETS[item.id];
+      const accent = item.id === 'easy' ? 0x6bffa2 : item.id === 'hard' ? 0xff7a66 : 0x6cf3ff;
+
+      item.gfx.clear();
+      item.gfx.fillStyle(0x071223, isSelected ? 0.96 : hover ? 0.86 : 0.72);
+      item.gfx.fillRoundedRect(0, 0, diffCardW, diffCardH, 10);
+      item.gfx.fillStyle(accent, isSelected ? 0.24 : hover ? 0.14 : 0.08);
+      item.gfx.fillRoundedRect(0, 0, diffCardW, 6, { tl: 10, tr: 10, bl: 0, br: 0 });
+      item.gfx.lineStyle(isSelected ? 2 : 1, accent, isSelected ? 0.95 : hover ? 0.65 : 0.35);
+      item.gfx.strokeRoundedRect(0, 0, diffCardW, diffCardH, 10);
+
+      item.label.setText(preset.label.toUpperCase()).setColor(isSelected ? '#f5fcff' : '#9cc7dd');
+      item.desc.setText(preset.description).setColor(isSelected ? '#bfe8ff' : '#7fa8c0');
+    };
+
+    DIFFICULTY_IDS.forEach((id, index) => {
+      const x = diffStartX + index * (diffCardW + diffGap);
+      const gfx = this.add.graphics().setPosition(x, diffY);
+      const label = this.add.text(x + diffCardW / 2, diffY + 14, '', {
+        fontFamily: FONT, fontSize: '10px', color: '#9cc7dd', letterSpacing: 2,
+        stroke: '#04101e', strokeThickness: 3,
+      }).setOrigin(0.5, 0);
+      const desc = this.add.text(x + diffCardW / 2, diffY + 33, '', {
+        fontFamily: 'Arial, sans-serif', fontSize: '9px', color: '#7fa8c0',
+        stroke: '#04101e', strokeThickness: 2,
+      }).setOrigin(0.5, 0);
+      const hit = this.add.rectangle(x + diffCardW / 2, diffY + diffCardH / 2, diffCardW, diffCardH, 0, 0)
+        .setInteractive({ useHandCursor: true });
+
+      const item = { id, gfx, label, desc };
+      difficultyButtons.push(item);
+
+      container.add(gfx);
+      container.add(label);
+      container.add(desc);
+      container.add(hit);
+
+      drawDifficultyCard(item);
+
+      hit.on('pointerover', () => drawDifficultyCard(item, true));
+      hit.on('pointerout', () => drawDifficultyCard(item));
+      hit.on('pointerdown', () => {
+        selectedDifficulty = id;
+        Storage.setDifficulty(id);
+        difficultyButtons.forEach(button => drawDifficultyCard(button));
+      });
+    });
+
     // ── Divider + Mute ──────────────────────────────────────────
-    const muteLineY = panelY + 182;
+    const muteLineY = panelY + 292;
     container.add(this.add.rectangle(W / 2, muteLineY, panelW - 36, 1, 0x1a3060, 0.6));
     container.add(this.add.text(panelX + 22, muteLineY + 12, 'SOUND', {
       fontFamily: FONT, fontSize: '10px', color: '#9ac8e8', letterSpacing: 3,

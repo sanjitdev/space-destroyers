@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Boss } from '../entities/Boss';
+import type { BossTelegraphPattern } from '../entities/Boss';
 import { Bullet } from '../entities/Bullet';
 import { Enemy } from '../entities/Enemy';
 import { EnemyBullet } from '../entities/EnemyBullet';
@@ -18,7 +19,7 @@ import { StatsManager } from '../managers/StatsManager';
 import { TimerManager } from '../managers/TimerManager';
 import { FloatingText } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
-import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type EnemyType, type GameMode, type PowerUpType } from '../utils/Constants';
+import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type DifficultyId, type EnemyType, type GameMode, type PowerUpType } from '../utils/Constants';
 import { Storage } from '../utils/Storage';
 
 export class GameScene extends Phaser.Scene {
@@ -57,6 +58,7 @@ export class GameScene extends Phaser.Scene {
   private countdownActive = false;
   private paused = false;
   private mode: GameMode = 'timed';
+  private difficulty: DifficultyId = 'normal';
   private themeBulletTint = 0xffffff;
   private ribbonLaser: RibbonLaser | null = null;
 
@@ -64,7 +66,7 @@ export class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  create(data?: { mode?: GameMode }): void {
+  create(data?: { mode?: GameMode; difficulty?: DifficultyId }): void {
     this.gameFinished = false;
     this.movePointerId = null;
     this.firePointerId = null;
@@ -72,6 +74,7 @@ export class GameScene extends Phaser.Scene {
     this.touchMoveY = null;
     this.shootHeld = false;
     this.mode = data?.mode ?? 'timed';
+    this.difficulty = data?.difficulty ?? Storage.getDifficulty();
     const theme = THEMES[Storage.getTheme()];
     this.themeBulletTint = theme.bulletTint;
 
@@ -93,7 +96,7 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 72, ship);
     this.scoreManager = new ScoreManager();
     this.timerManager = new TimerManager(undefined, this.mode === 'infinite');
-    this.difficultyManager = new DifficultyManager();
+    this.difficultyManager = new DifficultyManager(this.difficulty);
     this.powerUpManager = new PowerUpManager();
     this.enemySpawnManager = new EnemySpawnManager(this, this.enemies, this.difficultyManager);
     this.audioManager = new AudioManager(this);
@@ -213,6 +216,7 @@ export class GameScene extends Phaser.Scene {
         this.player.x, this.player.y,
         (x, y, vx, vy) => this.spawnEnemyBullet(x, y, vx, vy),
         (ability) => this.handleBossSpecial(ability),
+        (pattern) => this.showBossAttackTelegraph(pattern, boss.x, boss.y),
       );
       if (boss.checkJustEnteredPhase2()) this.handleBossPhase2Transition(boss);
       this.hud.setBossHp(boss.getHpFraction(), boss.getName(), boss.getLevel());
@@ -894,6 +898,37 @@ export class GameScene extends Phaser.Scene {
       repeat: 3,
       duration: 300,
       onComplete: () => warn.destroy(),
+    });
+  }
+
+  private showBossAttackTelegraph(pattern: BossTelegraphPattern, bossX: number, bossY: number): void {
+    const telegraph = this.add.graphics().setDepth(13);
+    telegraph.lineStyle(3, 0xff3355, 0.9);
+
+    if (pattern === 'aimed') {
+      telegraph.strokeLineShape(new Phaser.Geom.Line(bossX, bossY + 32, this.player.x, this.player.y));
+    } else if (pattern === 'fan') {
+      const fanAngles = [-44, -22, 0, 22, 44];
+      for (const degrees of fanAngles) {
+        const radians = Phaser.Math.DegToRad(90 + degrees);
+        const endX = bossX + Math.cos(radians) * 520;
+        const endY = bossY + 32 + Math.sin(radians) * 520;
+        telegraph.strokeLineShape(new Phaser.Geom.Line(bossX, bossY + 32, endX, endY));
+      }
+    } else {
+      const laneOffsets = [-68, -36, 0, 36, 68];
+      for (const offset of laneOffsets) {
+        const laneX = bossX + offset;
+        telegraph.strokeLineShape(new Phaser.Geom.Line(laneX, bossY + 20, laneX, GAME_HEIGHT));
+      }
+    }
+
+    this.tweens.add({
+      targets: telegraph,
+      alpha: 0,
+      duration: 220,
+      ease: 'Sine.easeOut',
+      onComplete: () => telegraph.destroy(),
     });
   }
 

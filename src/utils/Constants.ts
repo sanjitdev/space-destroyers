@@ -85,6 +85,43 @@ export const POWER_UP_WEIGHTS: Record<PowerUpType, number> = {
 // ── Game mode ──────────────────────────────────────────────────────────────
 export type GameMode = 'timed' | 'infinite';
 
+// ── Difficulty system ───────────────────────────────────────────────────────
+export type DifficultyId = 'easy' | 'normal' | 'hard';
+
+export interface DifficultyPreset {
+  readonly id: DifficultyId;
+  readonly label: string;
+  readonly description: string;
+  readonly spawnIntervalScale: number;
+  readonly speedScale: number;
+}
+
+export const DIFFICULTY_PRESETS: Record<DifficultyId, DifficultyPreset> = {
+  easy: {
+    id: 'easy',
+    label: 'Easy',
+    description: 'Softer enemy pacing',
+    spawnIntervalScale: 1.18,
+    speedScale: 0.88,
+  },
+  normal: {
+    id: 'normal',
+    label: 'Normal',
+    description: 'Default challenge',
+    spawnIntervalScale: 1,
+    speedScale: 1,
+  },
+  hard: {
+    id: 'hard',
+    label: 'Hard',
+    description: 'Fast, dense pressure',
+    spawnIntervalScale: 0.86,
+    speedScale: 1.14,
+  },
+};
+
+export const DIFFICULTY_IDS = ['easy', 'normal', 'hard'] as const satisfies readonly DifficultyId[];
+
 // ── Theme system ───────────────────────────────────────────────────────────
 export type ThemeId = 'blue' | 'purple' | 'red' | 'green' | 'gold';
 

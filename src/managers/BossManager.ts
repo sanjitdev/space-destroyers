@@ -1,31 +1,13 @@
 import Phaser from 'phaser';
 import { Boss } from '../entities/Boss';
 import { BOSS_LEVEL_CONFIGS, type EnemyType } from '../utils/Constants';
-
-export type BossObjectiveEnemyType = 'small' | 'medium' | 'heavy';
-
-type EnemyKillProgress = Record<BossObjectiveEnemyType, number>;
-
-const EMPTY_PROGRESS = (): EnemyKillProgress => ({ small: 0, medium: 0, heavy: 0 });
-
-const FIRST_BOSS_SMALL_KILLS = 14;
-const FIRST_BOSS_MEDIUM_KILLS = 4;
-const FIRST_BOSS_HEAVY_KILLS = 0;
-
-const getGateRequirements = (level: number): EnemyKillProgress => ({
-  small: level === 1 ? FIRST_BOSS_SMALL_KILLS : level <= 3 ? 6 + level * 2 : 10 + level * 2,
-  medium: level === 1 ? FIRST_BOSS_MEDIUM_KILLS : level <= 3 ? 1 + level : 3 + Math.floor(level * 1.4),
-  heavy: level === 1 ? FIRST_BOSS_HEAVY_KILLS : level <= 4 ? 1 : 1 + Math.floor((level - 1) / 3),
-});
-
-const isBossObjectiveEnemy = (type: EnemyType): type is BossObjectiveEnemyType =>
-  type === 'small' || type === 'medium' || type === 'heavy';
-
-const getBossHpScale = (level: number): number => {
-  if (level <= 5) return 1 + (level - 1) * 0.16;
-  const levelFiveScale = 1 + 4 * 0.16;
-  return levelFiveScale + (level - 5) * 0.10;
-};
+import {
+  EMPTY_PROGRESS,
+  getBossHpScale,
+  getGateRequirements,
+  isBossObjectiveEnemy,
+  type EnemyKillProgress,
+} from './BossProgression';
 
 export class BossManager {
   private boss: Boss | null = null;
