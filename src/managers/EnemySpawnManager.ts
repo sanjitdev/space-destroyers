@@ -2,10 +2,22 @@ import Phaser from 'phaser';
 import { Enemy } from '../entities/Enemy';
 import { GAME_WIDTH, type EnemyType } from '../utils/Constants';
 import { DifficultyManager } from './DifficultyManager';
+import { getGateRequirements } from './BossProgression';
 import { pickWeighted, randomBetween } from '../utils/Random';
 
 const FORMATION_INTERVAL_MS = 12_000;
 const ENEMY_ENTRY_Y = 190;
+const MIN_LEVEL_DURATION_MS = 60_000;
+const MAX_LEVEL_DURATION_MS = 120_000;
+const LEVEL_DURATION_STEP_MS = 7_000;
+const KILL_EFFICIENCY = 0.78;
+const OBJECTIVE_TYPE_SPAWN_SHARE = 0.82;
+const MIN_SPAWN_INTERVAL_MS = 420;
+const MAX_SPAWN_INTERVAL_MS = 1_600;
+const START_RAMP_FACTOR = 1.25;
+const END_RAMP_FACTOR = 0.85;
+const ENEMY_TYPE_REPEAT_CHANCE = 0.62;
+const ENEMY_TYPE_REPEAT_MAX_STREAK = 4;
 
 type FormationFn = (scene: Phaser.Scene, group: Phaser.Physics.Arcade.Group, speedMult: number, progressionLevel: number) => void;
 
@@ -80,6 +92,9 @@ export class EnemySpawnManager {
   private cooldownMs = 250;
   private formationCooldownMs = FORMATION_INTERVAL_MS;
   private progressionLevel = 1;
+  private levelElapsedMs = 0;
+  private lastSpawnedType: EnemyType | null = null;
+  private lastSpawnStreak = 0;
   private readonly scene: Phaser.Scene;
   private readonly group: Phaser.Physics.Arcade.Group;
   private readonly difficultyManager: DifficultyManager;
@@ -91,10 +106,11 @@ export class EnemySpawnManager {
   }
 
   update(deltaMs: number): void {
+    this.levelElapsedMs += deltaMs;
     this.cooldownMs -= deltaMs;
     while (this.cooldownMs <= 0) {
       this.spawnEnemy();
-      this.cooldownMs += this.difficultyManager.getSpawnIntervalMs();
+      this.cooldownMs += this.getAdaptiveSpawnIntervalMs();
     }
 
     this.formationCooldownMs -= deltaMs;
@@ -107,6 +123,9 @@ export class EnemySpawnManager {
 
   setProgressionLevel(level: number): void {
     this.progressionLevel = Math.max(1, level);
+    this.levelElapsedMs = 0;
+    this.lastSpawnedType = null;
+    this.lastSpawnStreak = 0;
     this.cooldownMs = 400;
     this.formationCooldownMs = FORMATION_INTERVAL_MS;
   }
@@ -115,7 +134,24 @@ export class EnemySpawnManager {
     const availableWeights = this.difficultyManager
       .getEnemyWeights()
       .filter(({ value, weight }) => weight > 0 && isTypeUnlocked(value, this.progressionLevel));
-    const type = pickWeighted(availableWeights);
+    let type = pickWeighted(availableWeights);
+
+    if (
+      this.lastSpawnedType &&
+      this.lastSpawnStreak < ENEMY_TYPE_REPEAT_MAX_STREAK &&
+      Math.random() < ENEMY_TYPE_REPEAT_CHANCE &&
+      availableWeights.some(({ value }) => value === this.lastSpawnedType)
+    ) {
+      type = this.lastSpawnedType;
+    }
+
+    if (type === this.lastSpawnedType) {
+      this.lastSpawnStreak += 1;
+    } else {
+      this.lastSpawnedType = type;
+      this.lastSpawnStreak = 1;
+    }
+
     const enemy = new Enemy(
       this.scene,
       randomBetween(36, GAME_WIDTH - 36),
@@ -125,5 +161,22 @@ export class EnemySpawnManager {
     );
 
     this.group.add(enemy);
+  }
+
+  private getAdaptiveSpawnIntervalMs(): number {
+    const requirements = getGateRequirements(this.progressionLevel);
+    const requiredKills = requirements.small + requirements.medium + requirements.heavy;
+    const targetDurationMs = Math.min(
+      MAX_LEVEL_DURATION_MS,
+      MIN_LEVEL_DURATION_MS + (this.progressionLevel - 1) * LEVEL_DURATION_STEP_MS,
+    );
+
+    const requiredSpawnCount = requiredKills / (KILL_EFFICIENCY * OBJECTIVE_TYPE_SPAWN_SHARE);
+    const baseIntervalMs = targetDurationMs / Math.max(1, requiredSpawnCount);
+    const levelProgress = Phaser.Math.Clamp(this.levelElapsedMs / targetDurationMs, 0, 1);
+    const rampFactor = Phaser.Math.Linear(START_RAMP_FACTOR, END_RAMP_FACTOR, levelProgress);
+    const rampedIntervalMs = baseIntervalMs * rampFactor;
+
+    return Phaser.Math.Clamp(rampedIntervalMs, MIN_SPAWN_INTERVAL_MS, MAX_SPAWN_INTERVAL_MS);
   }
 }

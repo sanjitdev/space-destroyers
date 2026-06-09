@@ -23,6 +23,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private shipCooldownMod: number;
   private baseScale = 1;
   private readonly exhaustEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly shieldField: Phaser.GameObjects.Ellipse;
 
   constructor(scene: Phaser.Scene, x: number, y: number, ship: ShipConfig) {
     super(scene, x, y, ship.texture);
@@ -48,6 +49,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       blendMode: Phaser.BlendModes.ADD,
       quantity: 2,
     }).setDepth(4);
+
+    this.shieldField = scene.add.ellipse(x, y, 84, 116, 0x4dd2ff, 0.11)
+      .setStrokeStyle(3, 0x8feaff, 0.75)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(6)
+      .setVisible(false);
+
+    scene.tweens.add({
+      targets: this.shieldField,
+      scaleX: 1.08,
+      scaleY: 1.08,
+      alpha: 0.62,
+      yoyo: true,
+      repeat: -1,
+      duration: 260,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   applyShipConfig(ship: ShipConfig): void {
@@ -99,6 +117,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.exhaustEmitter.setPosition(this.x, this.y + this.displayHeight * 0.42);
+    this.shieldField.setPosition(this.x, this.y - this.displayHeight * 0.03);
   }
 
   canFire(): boolean {
@@ -144,14 +163,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   setPowerGlow(activeTypes: PowerUpType[]): void {
+    const shieldActive = activeTypes.includes('shield');
+    this.shieldField.setVisible(shieldActive);
+
     if (activeTypes.length === 0) {
       this.setTint(0xffffff);
       this.setScale(this.baseScale);
       return;
     }
 
-    const primaryType = activeTypes.includes('shield') ? 'shield' : activeTypes[0];
+    const primaryType = shieldActive ? 'shield' : activeTypes[0];
     this.setTint(POWER_UP_TINTS[primaryType]);
     this.setScale(this.baseScale * (1.04 + activeTypes.length * 0.02));
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.exhaustEmitter.destroy();
+    this.shieldField.destroy();
+    super.destroy(fromScene);
   }
 }
