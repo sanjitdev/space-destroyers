@@ -6,7 +6,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image('player', 'assets/ship-falcon.png');
+    for (let level = 1; level <= 10; level++) {
+      this.load.image(`spaceship_${level}`, `assets/spaceship_${level}.png`);
+    }
   }
 
   create(): void {

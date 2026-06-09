@@ -17,14 +17,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private fireCooldownMs = 0;
   private invulnerabilityMs = 0;
   private autoFireEnabled = false;
-  private readonly shipSpeed: number;
-  private readonly shipCooldownMod: number;
+  private shipSpeed: number;
+  private shipCooldownMod: number;
+  private baseScale = 1;
   private readonly exhaustEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(scene: Phaser.Scene, x: number, y: number, ship: ShipConfig) {
     super(scene, x, y, ship.texture);
-    this.shipSpeed = PLAYER_SPEED * ship.speedMod;
-    this.shipCooldownMod = ship.cooldownMod;
+    this.shipSpeed = PLAYER_SPEED;
+    this.shipCooldownMod = 1;
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -32,9 +33,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.allowGravity = false;
     this.setCollideWorldBounds(true);
     this.setDepth(5);
-    this.setScale(ship.gameScale);
-    // Constrain physics body to the core hull (excludes wings/exhaust extremities)
-    body.setSize(this.displayWidth * 0.52, this.displayHeight * 0.48);
+    this.applyShipConfig(ship);
 
     this.exhaustEmitter = scene.add.particles(x, y, 'particle', {
       lifespan: 320,
@@ -47,6 +46,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       blendMode: Phaser.BlendModes.ADD,
       quantity: 2,
     }).setDepth(4);
+  }
+
+  applyShipConfig(ship: ShipConfig): void {
+    this.shipSpeed = PLAYER_SPEED * ship.speedMod;
+    this.shipCooldownMod = ship.cooldownMod;
+    this.baseScale = ship.gameScale;
+    this.setTexture(ship.texture);
+    this.setScale(this.baseScale);
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setSize(this.displayWidth * 0.52, this.displayHeight * 0.48);
   }
 
   update(
@@ -135,12 +144,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   setPowerGlow(activeTypes: PowerUpType[]): void {
     if (activeTypes.length === 0) {
       this.setTint(0xffffff);
-      this.setScale(1);
+      this.setScale(this.baseScale);
       return;
     }
 
     const primaryType = activeTypes.includes('shield') ? 'shield' : activeTypes[0];
     this.setTint(POWER_UP_TINTS[primaryType]);
-    this.setScale(1.04 + activeTypes.length * 0.02);
+    this.setScale(this.baseScale * (1.04 + activeTypes.length * 0.02));
   }
 }

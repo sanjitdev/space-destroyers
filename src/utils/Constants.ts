@@ -157,12 +157,20 @@ export interface ShipConfig {
   previewScale: number;
 }
 
+const SHIP_GAME_SCALE = 0.28;
+const SHIP_PREVIEW_SCALE = 0.23;
+
 export const SHIP_CONFIGS: ShipConfig[] = [
-  { id: 'falcon',  label: 'Falcon',  texture: 'player',       unlockScore: 0,    speedMod: 1.00, cooldownMod: 1.00, description: 'Balanced',            gameScale: 1.0,   previewScale: 1.5  },
-  { id: 'viper',   label: 'Viper',   texture: 'ship-viper',   unlockScore: 500,  speedMod: 1.20, cooldownMod: 1.10, description: 'Fast · Standard fire', gameScale: 3.0,   previewScale: 3.0  },
-  { id: 'nova',    label: 'Nova',    texture: 'ship-nova',    unlockScore: 1500, speedMod: 0.90, cooldownMod: 0.65, description: 'Rapid fire · Slower',  gameScale: 3.0,   previewScale: 3.0  },
-  { id: 'phantom', label: 'Phantom', texture: 'ship-phantom', unlockScore: 3000, speedMod: 1.15, cooldownMod: 0.80, description: 'Agile · Fast fire',    gameScale: 3.0,   previewScale: 3.0  },
-  { id: 'titan',   label: 'Titan',   texture: 'ship-titan',   unlockScore: 6000, speedMod: 0.85, cooldownMod: 0.55, description: 'Heavy · Rapid fire',   gameScale: 3.0,   previewScale: 3.0  },
+  { id: 'ship-1',  label: 'Ship I',   texture: 'spaceship_1',  unlockScore: 0,    speedMod: 1.00, cooldownMod: 1.00, description: 'Level 1 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-2',  label: 'Ship II',  texture: 'spaceship_2',  unlockScore: 400,  speedMod: 1.00, cooldownMod: 1.00, description: 'Level 2 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-3',  label: 'Ship III', texture: 'spaceship_3',  unlockScore: 900,  speedMod: 1.00, cooldownMod: 1.00, description: 'Level 3 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-4',  label: 'Ship IV',  texture: 'spaceship_4',  unlockScore: 1500, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 4 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-5',  label: 'Ship V',   texture: 'spaceship_5',  unlockScore: 2200, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 5 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-6',  label: 'Ship VI',  texture: 'spaceship_6',  unlockScore: 3000, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 6 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-7',  label: 'Ship VII', texture: 'spaceship_7',  unlockScore: 3900, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 7 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-8',  label: 'Ship VIII',texture: 'spaceship_8',  unlockScore: 4900, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 8 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-9',  label: 'Ship IX',  texture: 'spaceship_9',  unlockScore: 6000, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 9 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-10', label: 'Ship X',   texture: 'spaceship_10', unlockScore: 7500, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 10 hull', gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
 ];
 
 export const getPlayerLevel = (highScore: number): number =>

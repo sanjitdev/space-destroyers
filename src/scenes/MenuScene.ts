@@ -151,10 +151,6 @@ export class MenuScene extends Phaser.Scene {
     sectionLabel(400, 'GAME MODE');
 
     const startGame = (mode: GameMode): void => {
-      const effectiveIdx = highScore >= SHIP_CONFIGS[selectedShipIdx].unlockScore
-        ? selectedShipIdx
-        : Storage.getSelectedShipIndex();
-      Storage.setSelectedShipIndex(effectiveIdx);
       this.scene.start('GameScene', { mode, difficulty: Storage.getDifficulty() });
     };
 

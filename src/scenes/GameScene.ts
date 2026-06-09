@@ -59,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private paused = false;
   private mode: GameMode = 'timed';
   private difficulty: DifficultyId = 'normal';
+  private currentShipLevel = 1;
   private themeBulletTint = 0xffffff;
   private ribbonLaser: RibbonLaser | null = null;
 
@@ -92,7 +93,7 @@ export class GameScene extends Phaser.Scene {
     this.powerUps = this.physics.add.group({ classType: PowerUp, maxSize: 16, runChildUpdate: true });
     this.bossGroup = this.physics.add.group();
 
-    const ship = SHIP_CONFIGS[Storage.getSelectedShipIndex()];
+    const ship = SHIP_CONFIGS[0];
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 72, ship);
     this.scoreManager = new ScoreManager();
     this.timerManager = new TimerManager(undefined, this.mode === 'infinite');
@@ -613,6 +614,7 @@ export class GameScene extends Phaser.Scene {
 
   private startLevelTransition(bossLevel: number): void {
     this.levelTransition = true;
+    const nextShipLevel = Math.min(SHIP_CONFIGS.length, bossLevel + 1);
 
     // Each level starts fresh on the basic weapon.
     this.powerUpManager.clearActive();
@@ -673,6 +675,7 @@ export class GameScene extends Phaser.Scene {
               duration: 650,
               ease: 'Cubic.easeOut',
               onComplete: () => {
+                this.applyShipForLevel(nextShipLevel);
                 body.enable = true;
                 banner.destroy();
                 this.enemySpawnManager.setProgressionLevel(bossLevel + 1);
@@ -1156,7 +1159,7 @@ export class GameScene extends Phaser.Scene {
     Storage.incrementGamesPlayed();
     Storage.addKills(summary.enemiesKilled);
     Storage.addBossKills(summary.bossesKilled);
-    Storage.updateShipBest(Storage.getSelectedShipIndex(), this.scoreManager.getScore());
+    Storage.updateShipBest(this.currentShipLevel - 1, this.scoreManager.getScore());
     this.achievementManager.check();
 
     this.scene.start('GameOverScene', {
@@ -1167,5 +1170,11 @@ export class GameScene extends Phaser.Scene {
       grade,
       summary,
     });
+  }
+
+  private applyShipForLevel(level: number): void {
+    const clampedLevel = Phaser.Math.Clamp(level, 1, SHIP_CONFIGS.length);
+    this.currentShipLevel = clampedLevel;
+    this.player.applyShipConfig(SHIP_CONFIGS[clampedLevel - 1]);
   }
 }
