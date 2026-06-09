@@ -53,6 +53,9 @@ Enemy(scene, x, y, type: EnemyType, speedMultiplier)
 | `small` | 1 | 170 | 10 | No | — |
 | `medium` | 2 | 135 | 25 | Yes | 3200 ms |
 | `heavy` | 5 | 92 | 50 | Yes | 2000 ms |
+| `striker` | 3 | 215 | 40 | Yes | 2200 ms |
+| `bomber` | 7 | 118 | 80 | Yes | 1450 ms |
+| `destroyer` | 12 | 84 | 130 | Yes | 1250 ms |
 
 Actual speed = `baseSpeed × speedMultiplier` (from DifficultyManager).
 
@@ -61,9 +64,26 @@ Actual speed = `baseSpeed × speedMultiplier` (from DifficultyManager).
 |---|---|
 | `configure(type, speedMultiplier)` | Reconfigure a pooled enemy |
 | `damage(amount)` | Returns true if destroyed; flashes white on hit |
-| `applyMovementFactor(factor)` | Scales velocity (used by slowTime power-up) |
-| `updateShootTimer(deltaMs, onFire)` | Medium/heavy fire callback |
+| `applyMovementFactor(factor)` | Scales movement (used by slowTime) |
+| `updateShootTimer(deltaMs, onFire)` | Emits family-specific shot patterns |
 | `getPoints()` / `getTintColor()` / `getEnemyType()` | Accessors |
+
+### Movement patterns
+
+- `small`: gentle lateral drift
+- `medium`: moderate sine weave
+- `heavy`: slow lateral sway
+- `striker`: aggressive high-frequency weave
+- `bomber`: wide, slower sweep
+- `destroyer`: heavy low-frequency sweep
+
+### Shooting patterns
+
+- `medium`: single straight shot
+- `heavy`: 3-shot spread
+- `striker`: dual diagonal shots
+- `bomber`: 3-shot fan
+- `destroyer`: dense 3-shot heavy spread
 
 ---
 

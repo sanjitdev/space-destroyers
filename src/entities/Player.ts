@@ -10,6 +10,8 @@ import {
   type ShipConfig,
 } from '../utils/Constants';
 
+const MIN_Y = 188; // below taller HUD + boss objective area + margin
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private lives = PLAYER_LIVES;
   private fireCooldownMs = 0;
@@ -47,15 +49,36 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }).setDepth(4);
   }
 
-  update(deltaMs: number, horizontalInput: number, touchTargetX: number | null): void {
+  update(
+    deltaMs: number,
+    horizontalInput: number,
+    verticalInput: number,
+    touchTargetX: number | null,
+    touchTargetY: number | null,
+  ): void {
     this.fireCooldownMs = Math.max(0, this.fireCooldownMs - deltaMs);
     this.invulnerabilityMs = Math.max(0, this.invulnerabilityMs - deltaMs);
 
+    // Horizontal
     if (touchTargetX !== null) {
       const desiredVelocity = Phaser.Math.Clamp((touchTargetX - this.x) * 7, -this.shipSpeed, this.shipSpeed);
       this.setVelocityX(desiredVelocity);
     } else {
       this.setVelocityX(horizontalInput * this.shipSpeed);
+    }
+
+    // Vertical (75% of horizontal speed so the game stays readable)
+    if (touchTargetY !== null) {
+      const dvy = Phaser.Math.Clamp((touchTargetY - this.y) * 7, -this.shipSpeed * 0.75, this.shipSpeed * 0.75);
+      this.setVelocityY(dvy);
+    } else {
+      this.setVelocityY(verticalInput * this.shipSpeed * 0.75);
+    }
+
+    // Prevent player from going into HUD area
+    if (this.y < MIN_Y) {
+      this.y = MIN_Y;
+      (this.body as Phaser.Physics.Arcade.Body).velocity.y = 0;
     }
 
     if (this.invulnerabilityMs > 0) {

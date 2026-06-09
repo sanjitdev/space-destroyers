@@ -12,8 +12,8 @@ export const POWER_UP_DROP_CHANCE = 0.22;
 export const POWER_UP_SPEED = 180;
 export const DIFFICULTY_STEP_MS = 10_000;
 
-export type EnemyType = 'small' | 'medium' | 'heavy';
-export type PowerUpType = 'rapidFire' | 'tripleShot' | 'shield' | 'scoreMultiplier' | 'slowTime' | 'laser' | 'extraLife' | 'nuke' | 'piercingShot' | 'magnetShield';
+export type EnemyType = 'small' | 'medium' | 'heavy' | 'striker' | 'bomber' | 'destroyer';
+export type PowerUpType = 'rapidFire' | 'tripleShot' | 'doubleShot' | 'shield' | 'scoreMultiplier' | 'slowTime' | 'laser' | 'extraLife' | 'nuke' | 'piercingShot' | 'magnetShield' | 'ribbonLaser';
 
 export interface EnemyConfig {
   type: EnemyType;
@@ -26,16 +26,20 @@ export interface EnemyConfig {
 }
 
 export const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
-  small:  { type: 'small',  texture: 'enemy-small',  health: 1, speed: 170, points: 10, tint: 0xffffff, scale: 1 },
-  medium: { type: 'medium', texture: 'enemy-medium', health: 2, speed: 135, points: 25, tint: 0xffffff, scale: 1 },
-  heavy:  { type: 'heavy',  texture: 'enemy-heavy',  health: 5, speed: 92,  points: 50, tint: 0xffffff, scale: 1 },
+  small:     { type: 'small',     texture: 'enemy-small',     health: 1,  speed: 170, points: 10,  tint: 0xffffff, scale: 1 },
+  medium:    { type: 'medium',    texture: 'enemy-medium',    health: 2,  speed: 135, points: 25,  tint: 0xffffff, scale: 1 },
+  heavy:     { type: 'heavy',     texture: 'enemy-heavy',     health: 5,  speed: 92,  points: 50,  tint: 0xffffff, scale: 1 },
+  striker:   { type: 'striker',   texture: 'enemy-striker',   health: 3,  speed: 215, points: 40,  tint: 0xffffff, scale: 1 },
+  bomber:    { type: 'bomber',    texture: 'enemy-bomber',    health: 7,  speed: 118, points: 80,  tint: 0xffffff, scale: 1 },
+  destroyer: { type: 'destroyer', texture: 'enemy-destroyer', health: 12, speed: 84,  points: 130, tint: 0xffffff, scale: 1 },
 };
 
-export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'shield', 'scoreMultiplier', 'slowTime', 'laser', 'extraLife', 'nuke', 'piercingShot', 'magnetShield'] as const satisfies readonly PowerUpType[];
+export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'doubleShot', 'shield', 'scoreMultiplier', 'slowTime', 'laser', 'extraLife', 'nuke', 'piercingShot', 'magnetShield', 'ribbonLaser'] as const satisfies readonly PowerUpType[];
 
 export const POWER_UP_LABELS: Record<PowerUpType, string> = {
   rapidFire: 'Rapid Fire',
   tripleShot: 'Triple Shot',
+  doubleShot: 'Double Shot',
   shield: 'Shield',
   scoreMultiplier: '2x Score',
   slowTime: 'Slow Time',
@@ -44,11 +48,13 @@ export const POWER_UP_LABELS: Record<PowerUpType, string> = {
   nuke: 'NUKE',
   piercingShot: 'Piercing Shot',
   magnetShield: 'Magnet Shield',
+  ribbonLaser: 'Ribbon Laser',
 };
 
 export const POWER_UP_TINTS: Record<PowerUpType, number> = {
   rapidFire: 0x57e2e5,
   tripleShot: 0x7cff6b,
+  doubleShot: 0xffaa44,
   shield: 0x4dd2ff,
   scoreMultiplier: 0xfff275,
   slowTime: 0xc492ff,
@@ -57,6 +63,7 @@ export const POWER_UP_TINTS: Record<PowerUpType, number> = {
   nuke: 0xff6600,
   piercingShot: 0xffeedd,
   magnetShield: 0x00ddff,
+  ribbonLaser: 0xff44ff,
 };
 
 // Drop weight for each power-up (higher = more common)
@@ -64,11 +71,13 @@ export const POWER_UP_WEIGHTS: Record<PowerUpType, number> = {
   extraLife:       20,
   rapidFire:       16,
   tripleShot:      14,
+  doubleShot:      13,
   shield:          12,
   magnetShield:    10,
   scoreMultiplier: 10,
   piercingShot:     8,
   slowTime:         6,
+  ribbonLaser:      4,
   laser:            3,
   nuke:             2,
 };

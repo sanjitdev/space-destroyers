@@ -1,61 +1,44 @@
 # Power-Ups
 
-Drop chance per enemy kill: **22%** (`POWER_UP_DROP_CHANCE`). Boss kill always drops one.  
-Duration for timed effects: **10 seconds** (`POWER_UP_DURATION_MS`).  
-Fall speed: **180 px/s** (`POWER_UP_SPEED`).
+Drop chance per enemy kill: 22% (`POWER_UP_DROP_CHANCE`). Boss defeats also spawn a reward drop.
+Fall speed: 180 px/s (`POWER_UP_SPEED`).
 
 ## Types
 
-| Type key | Label | Color | Icon | Effect |
-|---|---|---|---|---|
-| `rapidFire` | Rapid Fire | Cyan `#57e2e5` | Two speed chevrons ⋀⋀ | Halves fire cooldown |
-| `tripleShot` | Triple Shot | Green `#7cff6b` | Three staggered arrows ↑↑↑ | Fires 3 bullets per shot (left/centre/right) |
-| `shield` | Shield | Blue `#4dd2ff` | Kite shield with cross | Absorbs the next hit; invulnerability stays active |
-| `scoreMultiplier` | 2× Score | Gold `#fff275` | 5-point star ★ | Doubles points awarded for kills |
-| `slowTime` | Slow Time | Purple `#c492ff` | Hourglass ⏳ | All enemy speeds halved |
-| `laser` | MEGA LASER | Periwinkle `#8899ff` | Crosshair beam + | Fires an instant full-width beam sweep (immediate, not stored) |
-| `extraLife` | +1 Life | Pink `#ff5c8a` | Heart ♥ | +1 life up to max of 5; always applied instantly, never stored |
+| Type key | Label | Effect |
+|---|---|---|
+| `rapidFire` | Rapid Fire | Halves fire cooldown until cleared |
+| `tripleShot` | Triple Shot | Fires 3 bullets per volley |
+| `doubleShot` | Double Shot | Fires 2 bullets per volley |
+| `shield` | Shield | Blocks hits, stacks to 3 charges |
+| `scoreMultiplier` | 2x Score | Doubles score gain |
+| `slowTime` | Slow Time | Halves enemy movement speed |
+| `laser` | MEGA LASER | Immediate beam sweep |
+| `extraLife` | +1 Life | Gain one life up to cap |
+| `nuke` | NUKE | Destroy all enemies on screen |
+| `piercingShot` | Piercing Shot | Piercing bullet behavior |
+| `magnetShield` | Magnet Shield | Pulls in/clears nearby bullets |
+| `ribbonLaser` | Ribbon Laser | Rotating ribbon lasers for 15 seconds |
 
-## Textures
-Each type has its own 28×28 procedural texture (`powerup-{typeKey}`) generated in `BootScene`. The diamond base is filled with the type's tint color; a white symbol is drawn on top. No post-tinting is applied at runtime.
+## Timing and Persistence
 
-## Collection Behaviour
+- Persistent buffs: most power-ups stay active until player damage or level reset.
+- Timed buff: `ribbonLaser` expires after 15000 ms.
+- Shield is charge-based and not timer-based.
 
-```
-On pickup:
-  if type === 'laser'     → fire immediately
-  else if type === 'extraLife' → addLife() immediately
-  else if boss is active AND stored slots < 3:
-      → bank into PowerUpManager.storedPowerUps[]
-      → FloatingText: "STORED: {label}"
-  else:
-      → PowerUpManager.activate(type) immediately
-      → FloatingText: "{label}"
-```
+## Storage Rules
 
-## Stored Power-Ups (Boss Fights)
+- During boss fights, up to 3 non-instant power-ups can be stored.
+- Use `E` to consume the first stored slot.
+- Stored slots are shown in HUD as tinted mini-slots.
 
-During a boss fight up to **3** power-ups can be banked (laser and extraLife bypass storage).  
-The HUD shows 3 small tinted slots below the header panel.
+## Collection Flow
 
-**`E` key** — use the first stored power-up immediately:
-- Non-laser types activate normally (timed buff)
-- Laser fires instantly
+- `laser` and `nuke`: execute immediately.
+- `extraLife`: applies immediately.
+- During active boss, storable types go to storage if slots are available.
+- Otherwise, picked power-up activates instantly.
 
-## Laser Beam Mechanics
+## Level Transition Rule
 
-Three layered Rectangles (glow / beam / core) anchored at player X, `origin(0.5, 1)`, `scaleY` tweens 0→1 over 600 ms (`Sine.easeIn`).
-
-An `onUpdate` callback calculates the live beam top edge and destroys any enemy in path based on X distance threshold (`< beamWidth + 14`).
-
-After travel: spread + fade tween (320 ms, `Cubic.easeOut`), then rectangles destroyed.
-
-Side effects: camera shake 300 ms, camera flash blue, `playLaser()`.
-
-## Adding a New Power-Up
-
-1. Add the string literal to `PowerUpType` union in `Constants.ts`
-2. Add to `POWER_UP_TYPES` array
-3. Add entries to `POWER_UP_LABELS` and `POWER_UP_TINTS`
-4. Draw the texture block in `BootScene.create()` (key: `powerup-{typeKey}`)
-5. Handle the effect in `GameScene` — either in the overlap callback or `update()`
+At each new level start, active and stored power-ups are cleared so the player starts with the basic weapon loadout.

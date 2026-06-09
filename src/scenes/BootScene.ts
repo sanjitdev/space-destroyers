@@ -210,6 +210,80 @@ export class BootScene extends Phaser.Scene {
     graphics.generateTexture('enemy-heavy', 52, 44);
     graphics.clear();
 
+    // Striker (34×28) — razor-fast crimson interceptor
+    graphics.fillStyle(0x5a0018, 1);
+    graphics.fillTriangle(17, 0, 34, 24, 0, 24);
+    graphics.fillStyle(0xff335f, 1);
+    graphics.fillTriangle(17, 4, 29, 23, 5, 23);
+    graphics.fillStyle(0xff88aa, 0.9);
+    graphics.fillTriangle(17, 8, 23, 18, 11, 18);
+    graphics.fillStyle(0x250008, 1);
+    graphics.fillEllipse(17, 13, 10, 8);
+    graphics.fillStyle(0xffffff, 0.95);
+    graphics.fillCircle(17, 13, 2.5);
+    graphics.fillStyle(0xff6699, 0.9);
+    graphics.fillRect(4, 22, 7, 3);
+    graphics.fillRect(23, 22, 7, 3);
+    graphics.generateTexture('enemy-striker', 34, 28);
+    graphics.clear();
+
+    // Bomber (58×40) — plated assault craft with payload bays
+    graphics.fillStyle(0x463200, 1);
+    graphics.fillRoundedRect(8, 6, 42, 28, 10);
+    graphics.fillStyle(0xffaa22, 1);
+    graphics.fillRoundedRect(12, 8, 34, 24, 8);
+    graphics.fillStyle(0x6b4300, 1);
+    graphics.fillRect(26, 4, 6, 30);
+    graphics.fillStyle(0x1a1000, 1);
+    graphics.fillCircle(18, 20, 5);
+    graphics.fillCircle(40, 20, 5);
+    graphics.fillStyle(0xffe28a, 0.9);
+    graphics.fillCircle(18, 20, 2);
+    graphics.fillCircle(40, 20, 2);
+    graphics.fillStyle(0x8a5d00, 1);
+    graphics.fillRect(2, 14, 10, 8);
+    graphics.fillRect(46, 14, 10, 8);
+    graphics.fillStyle(0xffcc55, 0.85);
+    graphics.fillRect(0, 16, 8, 4);
+    graphics.fillRect(50, 16, 8, 4);
+    graphics.generateTexture('enemy-bomber', 58, 40);
+    graphics.clear();
+
+    // Destroyer (72×54) — elite purple warship with three core emitters
+    graphics.fillStyle(0x120022, 1);
+    graphics.fillPoints([
+      new Phaser.Math.Vector2(36, 0),
+      new Phaser.Math.Vector2(58, 10),
+      new Phaser.Math.Vector2(72, 26),
+      new Phaser.Math.Vector2(64, 46),
+      new Phaser.Math.Vector2(36, 54),
+      new Phaser.Math.Vector2(8, 46),
+      new Phaser.Math.Vector2(0, 26),
+      new Phaser.Math.Vector2(14, 10),
+    ], true);
+    graphics.fillStyle(0x7b2cff, 1);
+    graphics.fillPoints([
+      new Phaser.Math.Vector2(36, 5),
+      new Phaser.Math.Vector2(54, 13),
+      new Phaser.Math.Vector2(61, 26),
+      new Phaser.Math.Vector2(55, 40),
+      new Phaser.Math.Vector2(36, 48),
+      new Phaser.Math.Vector2(17, 40),
+      new Phaser.Math.Vector2(11, 26),
+      new Phaser.Math.Vector2(18, 13),
+    ], true);
+    graphics.fillStyle(0x1a0035, 1);
+    graphics.fillRect(21, 12, 30, 20);
+    graphics.fillStyle(0xe3c1ff, 0.9);
+    graphics.fillCircle(24, 22, 4);
+    graphics.fillCircle(36, 18, 4.5);
+    graphics.fillCircle(48, 22, 4);
+    graphics.fillStyle(0xa96dff, 0.8);
+    graphics.fillRect(14, 39, 10, 8);
+    graphics.fillRect(48, 39, 10, 8);
+    graphics.generateTexture('enemy-destroyer', 72, 54);
+    graphics.clear();
+
     // ── Power-up textures — white icon on transparent base; tinted at runtime ─
     const D = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
 
@@ -229,6 +303,15 @@ export class BootScene extends Phaser.Scene {
     graphics.fillTriangle(21, 9, 17, 16, 25, 16);
     graphics.fillRect(19, 16, 4, 6);
     graphics.generateTexture('powerup-tripleShot', 28, 28);
+    graphics.clear();
+
+    // doubleShot — twin upward arrows
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillTriangle(9, 6, 4, 14, 14, 14);
+    graphics.fillRect(7, 14, 4, 10);
+    graphics.fillTriangle(19, 6, 14, 14, 24, 14);
+    graphics.fillRect(17, 14, 4, 10);
+    graphics.generateTexture('powerup-doubleShot', 28, 28);
     graphics.clear();
 
     // shield — kite shield outline with cross; dark inner recess
@@ -319,6 +402,16 @@ export class BootScene extends Phaser.Scene {
     graphics.fillCircle(8, 27, 2);
     graphics.fillCircle(20, 27, 2);
     graphics.generateTexture('powerup-magnetShield', 28, 28);
+    graphics.clear();
+
+    // ribbonLaser — crossed energy ribbons with bright center node
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillTriangle(4, 8, 10, 4, 24, 20);
+    graphics.fillTriangle(4, 20, 10, 24, 24, 8);
+    graphics.fillCircle(14, 14, 4);
+    graphics.fillStyle(0x000000, 0.55);
+    graphics.fillCircle(14, 14, 1.6);
+    graphics.generateTexture('powerup-ribbonLaser', 28, 28);
     graphics.clear();
 
     graphics.fillStyle(0xffffff, 1);

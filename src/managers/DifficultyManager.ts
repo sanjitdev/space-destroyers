@@ -20,6 +20,9 @@ export class DifficultyManager {
       { value: 'small', weight: Math.max(16, 76 - this.stage * 8) },
       { value: 'medium', weight: Math.min(46, 18 + this.stage * 6) },
       { value: 'heavy', weight: Math.min(30, 6 + this.stage * 4) },
+      { value: 'striker', weight: this.stage >= 2 ? Math.min(36, 8 + (this.stage - 2) * 7) : 0 },
+      { value: 'bomber', weight: this.stage >= 4 ? Math.min(28, 4 + (this.stage - 4) * 6) : 0 },
+      { value: 'destroyer', weight: this.stage >= 6 ? Math.min(20, 2 + (this.stage - 6) * 5) : 0 },
     ];
   }
 }

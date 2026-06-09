@@ -48,5 +48,10 @@ Selected in MenuScene. Stored in `localStorage` via `Storage.getTheme()`.
 | `space-destroyers-muted` | `false` | `Storage.getMuted / setMuted` |
 | `space-destroyers-theme` | `'blue'` | `Storage.getTheme / setTheme` |
 | `space-destroyers-ship` | `0` | `Storage.getSelectedShipIndex / setSelectedShipIndex` |
+| `space-destroyers-games-played` | `0` | `Storage.getGamesPlayed / incrementGamesPlayed` |
+| `space-destroyers-total-kills` | `0` | `Storage.getTotalKills / addKills` |
+| `space-destroyers-total-bosses` | `0` | `Storage.getTotalBossesKilled / addBossKills` |
+| `space-destroyers-tutorial-done` | `false` | `Storage.hasDoneTutorial / markTutorialDone` |
+| `space-destroyers-ship-best-{idx}` | `0` | `Storage.getShipBest / updateShipBest` |
 
 All reads wrapped in `try/catch` to handle `localStorage` unavailability.

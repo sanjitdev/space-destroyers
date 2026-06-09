@@ -1,41 +1,75 @@
-import { POWER_UP_DROP_CHANCE, POWER_UP_DURATION_MS, POWER_UP_LABELS, POWER_UP_TYPES, POWER_UP_WEIGHTS, type PowerUpType } from '../utils/Constants';
+import { POWER_UP_DROP_CHANCE, POWER_UP_LABELS, POWER_UP_TYPES, POWER_UP_WEIGHTS, type PowerUpType } from '../utils/Constants';
 import { chance, pickWeighted } from '../utils/Random';
 
 const MAX_STORED = 3;
+const MAX_SHIELD_STACKS = 3;
+const RIBBON_LASER_DURATION_MS = 15_000;
 
 export class PowerUpManager {
-  private readonly activePowerUps = new Map<PowerUpType, number>();
+  private readonly activePowerUps = new Set<PowerUpType>();
   private readonly storedPowerUps: PowerUpType[] = [];
+  private shieldCharges = 0;
+  private ribbonLaserRemainingMs = 0;
 
   update(deltaMs: number): void {
-    for (const [type, remainingMs] of this.activePowerUps.entries()) {
-      const updated = remainingMs - deltaMs;
-      if (updated <= 0) {
-        this.activePowerUps.delete(type);
-      } else {
-        this.activePowerUps.set(type, updated);
+    if (this.activePowerUps.has('ribbonLaser')) {
+      this.ribbonLaserRemainingMs = Math.max(0, this.ribbonLaserRemainingMs - deltaMs);
+      if (this.ribbonLaserRemainingMs <= 0) {
+        this.activePowerUps.delete('ribbonLaser');
       }
     }
   }
 
   activate(type: PowerUpType): void {
-    this.activePowerUps.set(type, POWER_UP_DURATION_MS);
+    if (type === 'shield') {
+      this.shieldCharges = Math.min(MAX_SHIELD_STACKS, this.shieldCharges + 1);
+      return;
+    }
+    if (type === 'ribbonLaser') {
+      this.activePowerUps.add(type);
+      this.ribbonLaserRemainingMs = RIBBON_LASER_DURATION_MS;
+      return;
+    }
+    this.activePowerUps.add(type);
   }
 
   deactivate(type: PowerUpType): void {
+    if (type === 'shield') {
+      this.shieldCharges = 0;
+      return;
+    }
+    if (type === 'ribbonLaser') {
+      this.ribbonLaserRemainingMs = 0;
+    }
     this.activePowerUps.delete(type);
   }
 
   isActive(type: PowerUpType): boolean {
+    if (type === 'shield') {
+      return this.shieldCharges > 0;
+    }
     return this.activePowerUps.has(type);
   }
 
   getActiveTypes(): PowerUpType[] {
-    return Array.from(this.activePowerUps.keys());
+    const types = Array.from(this.activePowerUps);
+    if (this.shieldCharges > 0) types.push('shield');
+    return types;
   }
 
   getDisplayItems(): string[] {
-    return this.getActiveTypes().map((type) => `${POWER_UP_LABELS[type]} ${Math.ceil((this.activePowerUps.get(type) ?? 0) / 1000)}s`);
+    return this.getActiveTypes().map((type) => {
+      if (type === 'shield') {
+        return this.shieldCharges > 1 ? `Shield x${this.shieldCharges}` : POWER_UP_LABELS[type];
+      }
+      return POWER_UP_LABELS[type];
+    });
+  }
+
+  consumeShieldCharge(): number {
+    if (this.shieldCharges <= 0) return 0;
+    this.shieldCharges -= 1;
+    return this.shieldCharges;
   }
 
   /** Store a power-up for later use. Returns false if storage is full. */
@@ -61,9 +95,15 @@ export class PowerUpManager {
     return this.storedPowerUps.length < MAX_STORED;
   }
 
-  /** Clear all currently active power-ups (EMP effect). */
+  clearStored(): void {
+    this.storedPowerUps.length = 0;
+  }
+
+  /** Clear all currently active power-ups (called on player damage or EMP). */
   clearActive(): void {
     this.activePowerUps.clear();
+    this.shieldCharges = 0;
+    this.ribbonLaserRemainingMs = 0;
   }
 
   shouldDrop(): boolean {
@@ -72,12 +112,5 @@ export class PowerUpManager {
 
   getRandomType(): PowerUpType {
     return pickWeighted(POWER_UP_TYPES.map(value => ({ value, weight: POWER_UP_WEIGHTS[value] })));
-  }
-
-  /** Returns active types with less than `thresholdMs` remaining. */
-  getExpiringTypes(thresholdMs: number): PowerUpType[] {
-    return Array.from(this.activePowerUps.entries())
-      .filter(([, ms]) => ms <= thresholdMs)
-      .map(([type]) => type);
   }
 }

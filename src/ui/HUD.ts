@@ -12,6 +12,10 @@ export class HUD extends Phaser.GameObjects.Container {
   private readonly livesText: Phaser.GameObjects.Text;
   private readonly timeValueText: Phaser.GameObjects.Text;
   private readonly powerUpRow: Phaser.GameObjects.Text;
+  private readonly objectivePanel: Phaser.GameObjects.Rectangle;
+  private readonly objectiveStatusText: Phaser.GameObjects.Text;
+  private readonly objectiveIcons: Phaser.GameObjects.Image[];
+  private readonly objectiveCountTexts: Phaser.GameObjects.Text[];
   private readonly muteBtn: Phaser.GameObjects.Text;
   private readonly bossBarBg: Phaser.GameObjects.Rectangle;
   private readonly bossBarFill: Phaser.GameObjects.Rectangle;
@@ -25,8 +29,8 @@ export class HUD extends Phaser.GameObjects.Container {
 
   private static readonly BAR_W = GAME_WIDTH - 40;
   private static readonly BAR_H = 18;
-  private static readonly BAR_Y = 138;
-  private static readonly PANEL_H = 128;
+  private static readonly BAR_Y = 162;
+  private static readonly PANEL_H = 152;
 
   constructor(scene: Phaser.Scene, onToggleMute: () => void) {
     super(scene, 0, 0);
@@ -51,32 +55,39 @@ export class HUD extends Phaser.GameObjects.Container {
 
     // ── Left block — Score ──────────────────────────────────────
     scene.add.text(22, 14, 'SCORE', {
-      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+      fontFamily: FONT, fontSize: '11px', color: '#9ac8e8', letterSpacing: 4,
+      stroke: '#000014', strokeThickness: 3,
     });
     this.scoreValueText = scene.add.text(22, 28, '0', {
       fontFamily: FONT, fontSize: '34px', color: '#ffffff',
-      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 16, fill: true },
+      stroke: '#000014', strokeThickness: 5,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 20, fill: true },
     });
     scene.add.text(22, 80, 'BEST', {
-      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+      fontFamily: FONT, fontSize: '11px', color: '#9ac8e8', letterSpacing: 4,
+      stroke: '#000014', strokeThickness: 3,
     });
     this.highValueText = scene.add.text(22, 94, '0', {
-      fontFamily: FONT, fontSize: '18px', color: '#7aaccc',
+      fontFamily: FONT, fontSize: '18px', color: '#d6efff',
+      stroke: '#000014', strokeThickness: 4,
     });
 
     // ── Right block — Lives + Timer ─────────────────────────────
     this.livesText = scene.add.text(GAME_WIDTH - 22, 14, '♥ ♥ ♥', {
-      fontFamily: FONT, fontSize: '16px', color: '#ff5c8a',
-      shadow: { offsetX: 0, offsetY: 0, color: '#ff2244', blur: 10, fill: true },
+      fontFamily: FONT, fontSize: '17px', color: '#ff5c8a',
+      stroke: '#000000', strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ff2244', blur: 12, fill: true },
     }).setOrigin(1, 0);
 
     this.timeValueText = scene.add.text(GAME_WIDTH - 22, 38, '60', {
       fontFamily: FONT, fontSize: '40px', color: '#6cf3ff',
-      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 18, fill: true },
+      stroke: '#000014', strokeThickness: 6,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 22, fill: true },
     }).setOrigin(1, 0);
 
     scene.add.text(GAME_WIDTH - 22, 92, 'SECONDS', {
-      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+      fontFamily: FONT, fontSize: '11px', color: '#9ac8e8', letterSpacing: 3,
+      stroke: '#000014', strokeThickness: 3,
     }).setOrigin(1, 0);
 
     // ── Mute icon ───────────────────────────────────────────────
@@ -88,15 +99,36 @@ export class HUD extends Phaser.GameObjects.Container {
     // ── Auto-fire badge ─────────────────────────────────────────
     this.autoFireBadge = scene.add.text(GAME_WIDTH / 2 + 26, 10, 'AUTO', {
       fontFamily: FONT, fontSize: '9px', color: '#7cff6b', letterSpacing: 2,
-      stroke: '#09101f', strokeThickness: 2,
-      shadow: { offsetX: 0, offsetY: 0, color: '#44ff88', blur: 6, fill: true },
+      stroke: '#000000', strokeThickness: 3,
+      shadow: { offsetX: 0, offsetY: 0, color: '#44ff88', blur: 8, fill: true },
     }).setOrigin(0, 0).setVisible(false);
 
     // ── Power-up strip ──────────────────────────────────────────
     this.powerUpRow = scene.add.text(GAME_WIDTH / 2, 108, '', {
-      fontFamily: FONT, fontSize: '11px', color: '#a8d8f0', letterSpacing: 1,
-      shadow: { offsetX: 0, offsetY: 0, color: '#57e2e5', blur: 6, fill: true },
+      fontFamily: FONT, fontSize: '12px', color: '#e8f7ff', letterSpacing: 1,
+      stroke: '#000014', strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color: '#57e2e5', blur: 10, fill: true },
     }).setOrigin(0.5, 0);
+
+    this.objectivePanel = scene.add.rectangle(GAME_WIDTH / 2, 136, GAME_WIDTH - 52, 20, 0x061222, 0.92)
+      .setStrokeStyle(1, 0x1a3060, 0.95);
+    this.objectiveStatusText = scene.add.text(92, 136, 'NEXT BOSS LV.1', {
+      fontFamily: FONT, fontSize: '10px', color: '#dff4ff', letterSpacing: 1,
+      stroke: '#000014', strokeThickness: 3,
+    }).setOrigin(0, 0.5);
+
+    const objectiveStartX = GAME_WIDTH - 128;
+    const objectiveStepX = 40;
+    const objectiveIconKeys = ['enemy-small', 'enemy-medium', 'enemy-heavy'] as const;
+    this.objectiveIcons = objectiveIconKeys.map((key, index) =>
+      scene.add.image(objectiveStartX + index * objectiveStepX, 136, key).setScale(0.34).setOrigin(0.5),
+    );
+    this.objectiveCountTexts = objectiveIconKeys.map((_, index) =>
+      scene.add.text(objectiveStartX + 12 + index * objectiveStepX, 136, '0', {
+        fontFamily: FONT, fontSize: '10px', color: '#dff4ff',
+        stroke: '#000014', strokeThickness: 3,
+      }).setOrigin(0, 0.5),
+    );
 
     // ── Stored power-up slots (3 slots below panel) ─────────────
     this.storedSlots = [];
@@ -124,14 +156,15 @@ export class HUD extends Phaser.GameObjects.Container {
       .setOrigin(0).setVisible(false);
     this.bossBarLabel = scene.add.text(GAME_WIDTH / 2, HUD.BAR_Y + HUD.BAR_H / 2, '— BOSS —', {
       fontFamily: FONT, fontSize: '11px', color: '#ffbbcc', letterSpacing: 3,
-      stroke: '#09101f', strokeThickness: 3,
+      stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5, 0.5).setVisible(false);
 
     this.add([
       panel, accentLine, divider,
       this.scoreValueText, this.highValueText,
       this.livesText, this.timeValueText,
-      this.muteBtn, this.autoFireBadge, this.powerUpRow,
+      this.muteBtn, this.autoFireBadge, this.powerUpRow, this.objectivePanel, this.objectiveStatusText,
+      ...this.objectiveIcons, ...this.objectiveCountTexts,
       ...this.storedSlots, ...this.storedIcons,
       this.bossBarBg, this.bossBarFill, this.bossBarLabel,
     ]);
@@ -139,7 +172,7 @@ export class HUD extends Phaser.GameObjects.Container {
 
   flashPowerUpRow(): void {
     this.powerUpRow.setColor('#ffee44');
-    this.scene.time.delayedCall(180, () => this.powerUpRow.setColor('#a8d8f0'));
+    this.scene.time.delayedCall(180, () => this.powerUpRow.setColor('#e8f7ff'));
   }
 
   sync(
@@ -148,6 +181,8 @@ export class HUD extends Phaser.GameObjects.Container {
     lives: number,
     timeRemaining: number,
     powerUps: string[],
+    bossObjectiveStatusText: string,
+    bossObjectiveCounts: [number, number, number] | null,
     muted: boolean,
     stored: readonly PowerUpType[],
     autoFire: boolean,
@@ -159,6 +194,14 @@ export class HUD extends Phaser.GameObjects.Container {
       .setColor(lives === 1 ? '#ff2244' : '#ff5c8a');
     this.timeValueText.setText(timeRemaining < 0 ? '∞' : String(timeRemaining));
     this.powerUpRow.setText(powerUps.length > 0 ? `⚡  ${powerUps.join('   ·   ')}` : '');
+    this.objectiveStatusText.setText(bossObjectiveStatusText);
+    this.objectiveIcons.forEach((icon, index) => {
+      const visible = bossObjectiveCounts !== null;
+      icon.setVisible(visible);
+      this.objectiveCountTexts[index]
+        .setVisible(visible)
+        .setText(visible ? String(bossObjectiveCounts[index]) : '');
+    });
     this.muteBtn.setText(muted ? '🔇' : '🔊');
     this.autoFireBadge.setVisible(autoFire);
 

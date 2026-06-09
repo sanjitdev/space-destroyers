@@ -5,6 +5,7 @@ import { Enemy } from '../entities/Enemy';
 import { EnemyBullet } from '../entities/EnemyBullet';
 import { Player } from '../entities/Player';
 import { PowerUp } from '../entities/PowerUp';
+import { RibbonLaser } from '../entities/RibbonLaser';
 import { AudioManager } from '../managers/AudioManager';
 import { AchievementManager } from '../managers/AchievementManager';
 import { BossManager } from '../managers/BossManager';
@@ -17,7 +18,7 @@ import { StatsManager } from '../managers/StatsManager';
 import { TimerManager } from '../managers/TimerManager';
 import { FloatingText } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
-import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type EnemyType, type GameMode } from '../utils/Constants';
+import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type EnemyType, type GameMode, type PowerUpType } from '../utils/Constants';
 import { Storage } from '../utils/Storage';
 
 export class GameScene extends Phaser.Scene {
@@ -49,6 +50,7 @@ export class GameScene extends Phaser.Scene {
   private movePointerId: number | null = null;
   private firePointerId: number | null = null;
   private touchMoveX: number | null = null;
+  private touchMoveY: number | null = null;
   private shootHeld = false;
   private gameFinished = false;
   private levelTransition = false;
@@ -56,6 +58,7 @@ export class GameScene extends Phaser.Scene {
   private paused = false;
   private mode: GameMode = 'timed';
   private themeBulletTint = 0xffffff;
+  private ribbonLaser: RibbonLaser | null = null;
 
   constructor() {
     super('GameScene');
@@ -66,6 +69,7 @@ export class GameScene extends Phaser.Scene {
     this.movePointerId = null;
     this.firePointerId = null;
     this.touchMoveX = null;
+    this.touchMoveY = null;
     this.shootHeld = false;
     this.mode = data?.mode ?? 'timed';
     const theme = THEMES[Storage.getTheme()];
@@ -104,9 +108,9 @@ export class GameScene extends Phaser.Scene {
       color: '#ffe050',
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '18px',
-      stroke: '#09101f',
-      strokeThickness: 4,
-      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 10, fill: true },
+      stroke: '#000000',
+      strokeThickness: 5,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 14, fill: true },
     }).setOrigin(0.5).setDepth(25).setAlpha(0).setScrollFactor(0);
 
     this.cursors = this.input.keyboard?.createCursorKeys();
@@ -122,6 +126,7 @@ export class GameScene extends Phaser.Scene {
 
     this.createTouchControls();
     this.createCollisions();
+    this.enemySpawnManager.setProgressionLevel(1);
     this.syncHud();
     this.startCountdown();
   }
@@ -130,6 +135,9 @@ export class GameScene extends Phaser.Scene {
     this.countdownActive = true;
     const cx = GAME_WIDTH / 2;
     const cy = GAME_HEIGHT / 2;
+    const countTweenDurationMs = 520;
+    const countStepDelayMs = 620;
+    const countStartDelayMs = 120;
 
     const overlay = this.add.rectangle(cx, cy, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.45).setDepth(40);
 
@@ -137,9 +145,9 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '120px',
       color: '#6cf3ff',
-      stroke: '#061220',
-      strokeThickness: 10,
-      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 40, fill: true },
+      stroke: '#000014',
+      strokeThickness: 12,
+      shadow: { offsetX: 0, offsetY: 0, color: '#6cf3ff', blur: 44, fill: true },
     }).setOrigin(0.5).setDepth(41).setAlpha(0);
 
     const show = (label: string, color: string, onDone: () => void): void => {
@@ -148,16 +156,16 @@ export class GameScene extends Phaser.Scene {
         targets: countText,
         scale: 1,
         alpha: 0,
-        duration: 800,
+        duration: countTweenDurationMs,
         ease: 'Expo.easeIn',
         onComplete: onDone,
       });
     };
 
-    this.time.delayedCall(200,  () => show('3', '#ff6644', () =>
-    this.time.delayedCall(900,  () => show('2', '#ffcc00', () =>
-    this.time.delayedCall(900,  () => show('1', '#44ff88', () =>
-    this.time.delayedCall(900,  () => {
+    this.time.delayedCall(countStartDelayMs, () => show('3', '#ff6644', () =>
+    this.time.delayedCall(countStepDelayMs, () => show('2', '#ffcc00', () =>
+    this.time.delayedCall(countStepDelayMs, () => show('1', '#44ff88', () =>
+    this.time.delayedCall(countStepDelayMs, () => {
       show('GO!', '#ffffff', () => {
         overlay.destroy();
         countText.destroy();
@@ -190,7 +198,7 @@ export class GameScene extends Phaser.Scene {
     this.enemySpawnManager.update(frameDelta);
 
     // Boss spawn check — kill-based
-    if (this.bossManager.checkSpawn(this.statsManager.getEnemiesKilled())) {
+    if (this.bossManager.checkSpawn()) {
       const spawnedBoss = this.bossManager.getBoss();
       if (spawnedBoss) this.bossGroup.add(spawnedBoss);
       this.showBossWarning(
@@ -221,7 +229,8 @@ export class GameScene extends Phaser.Scene {
     this.updateHomingBullets(frameDelta);
 
     const horizontalInput = this.getHorizontalInput();
-    this.player.update(frameDelta, horizontalInput, this.touchMoveX);
+    const verticalInput = this.getVerticalInput();
+    this.player.update(frameDelta, horizontalInput, verticalInput, this.touchMoveX, this.touchMoveY);
     this.player.setPowerGlow(this.powerUpManager.getActiveTypes());
 
     const slowFactor = this.powerUpManager.isActive('slowTime') ? 0.5 : 1;
@@ -239,16 +248,27 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Ribbon laser — create/update/destroy based on power-up state
+    const ribbonActive = this.powerUpManager.isActive('ribbonLaser');
+    if (ribbonActive && !this.ribbonLaser) {
+      this.ribbonLaser = new RibbonLaser(this);
+    } else if (!ribbonActive && this.ribbonLaser) {
+      this.ribbonLaser.destroy();
+      this.ribbonLaser = null;
+    }
+    if (this.ribbonLaser) {
+      this.ribbonLaser.update(this.player.x, this.player.y);
+      const hits = this.ribbonLaser.checkCollisions(this.enemies, this.enemyBullets, this.player.y);
+      for (const e of hits.enemies) this.destroyEnemy(e);
+      for (const eb of hits.bullets) eb.deactivate();
+    }
+
     if (this.shouldFire()) {
       this.fireVolley();
     }
 
     // Enemy shooting — medium/heavy fire back periodically
     this.updateEnemyShooting(frameDelta);
-
-    if (this.powerUpManager.getExpiringTypes(2000).length > 0) {
-      if (Math.floor(this.time.now / 300) % 2 === 0) this.hud.flashPowerUpRow();
-    }
 
     this.syncHud();
     this.updateComboDisplay();
@@ -286,6 +306,16 @@ export class GameScene extends Phaser.Scene {
       if (destroyed) {
         this.destroyBoss(boss);
       }
+    });
+
+    // Player bullets cancel enemy bullets
+    this.physics.add.overlap(this.bullets, this.enemyBullets, (bulletObj, ebObj) => {
+      const bullet = bulletObj as Bullet;
+      const eb = ebObj as EnemyBullet;
+      if (!bullet.active || !eb.active) return;
+      bullet.deactivate();
+      eb.deactivate();
+      this.createSmallBurst(bullet.x, bullet.y);
     });
 
     // Enemy bullets vs player
@@ -338,9 +368,12 @@ export class GameScene extends Phaser.Scene {
     const damaged = this.player.takeDamage(hasShield || hasMagnetShield);
     if (!damaged) {
       if (hasShield) {
-        // Single-use shield consumed on first hit
-        this.powerUpManager.deactivate('shield');
-        new FloatingText(this, this.player.x, this.player.y - 40, 'SHIELD BLOCKED!', '#4dd2ff');
+        const remainingShields = this.powerUpManager.consumeShieldCharge();
+        const label = remainingShields > 0
+          ? `SHIELD BLOCKED! (${remainingShields})`
+          : 'SHIELD BROKEN!';
+        new FloatingText(this, this.player.x, this.player.y - 40, label, '#4dd2ff');
+        this.syncHud();
         this.cameras.main.flash(80, 0, 160, 255, false);
       }
       return;
@@ -351,6 +384,12 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(220, 0.012);
     this.cameras.main.flash(120, 255, 0, 0, false);
     new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
+    // Clear all active power-ups on taking a hit
+    this.powerUpManager.clearActive();
+    if (this.ribbonLaser) {
+      this.ribbonLaser.destroy();
+      this.ribbonLaser = null;
+    }
     if (this.player.isOutOfLives()) {
       this.finishGame('death');
     }
@@ -378,11 +417,13 @@ export class GameScene extends Phaser.Scene {
 
       this.movePointerId = pointer.id;
       this.touchMoveX = Phaser.Math.Clamp(pointer.x, 24, GAME_WIDTH - 24);
+      this.touchMoveY = Phaser.Math.Clamp(pointer.y, 164, GAME_HEIGHT - 40);
     });
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (pointer.id === this.movePointerId && pointer.isDown) {
         this.touchMoveX = Phaser.Math.Clamp(pointer.x, 24, GAME_WIDTH - 24);
+        this.touchMoveY = Phaser.Math.Clamp(pointer.y, 164, GAME_HEIGHT - 40);
       }
     });
 
@@ -390,6 +431,7 @@ export class GameScene extends Phaser.Scene {
       if (pointer.id == this.movePointerId) {
         this.movePointerId = null;
         this.touchMoveX = null;
+        this.touchMoveY = null;
       }
       if (pointer.id == this.firePointerId) {
         this.firePointerId = null;
@@ -399,16 +441,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   private getHorizontalInput(): number {
-    if (!this.cursors) {
-      return 0;
-    }
+    if (!this.cursors) return 0;
+    if (this.cursors.left.isDown) return -1;
+    if (this.cursors.right.isDown) return 1;
+    return 0;
+  }
 
-    if (this.cursors.left.isDown) {
-      return -1;
-    }
-    if (this.cursors.right.isDown) {
-      return 1;
-    }
+  private getVerticalInput(): number {
+    if (!this.cursors) return 0;
+    if (this.cursors.up.isDown) return -1;
+    if (this.cursors.down.isDown) return 1;
     return 0;
   }
 
@@ -420,8 +462,14 @@ export class GameScene extends Phaser.Scene {
   private fireVolley(): void {
     const rapidFire = this.powerUpManager.isActive('rapidFire');
     const tripleShot = this.powerUpManager.isActive('tripleShot');
+    const doubleShot = this.powerUpManager.isActive('doubleShot');
 
-    this.spawnBullet(this.player.x, this.player.y - 24, 0);
+    if (doubleShot) {
+      this.spawnBullet(this.player.x - 7, this.player.y - 24, 0);
+      this.spawnBullet(this.player.x + 7, this.player.y - 24, 0);
+    } else {
+      this.spawnBullet(this.player.x, this.player.y - 24, 0);
+    }
     if (tripleShot) {
       this.spawnBullet(this.player.x - 10, this.player.y - 18, -170);
       this.spawnBullet(this.player.x + 10, this.player.y - 18, 170);
@@ -444,6 +492,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private destroyEnemy(enemy: Enemy): void {
+    this.bossManager.onEnemyKilled(enemy.getEnemyType());
     this.comboManager.onKill();
     this.statsManager.recordKill();
     this.statsManager.recordCombo(this.comboManager.streak);
@@ -491,6 +540,19 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(350, () => particles.destroy());
   }
 
+  private createSmallBurst(x: number, y: number): void {
+    const particles = this.add.particles(x, y, 'particle', {
+      speed: { min: 20, max: 80 },
+      scale: { start: 0.4, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: [0x57e2e5, 0xffffff],
+      lifespan: 150,
+      quantity: 4,
+      blendMode: 'ADD',
+    });
+    this.time.delayedCall(200, () => particles.destroy());
+  }
+
   private spawnPowerUp(x: number, y: number): void {
     const type = this.powerUpManager.getRandomType();
     let powerUp = this.powerUps.get(x, y) as PowerUp | null;
@@ -509,6 +571,7 @@ export class GameScene extends Phaser.Scene {
       const enemy = child as Enemy;
       if (!enemy.active) continue;
       killCount++;
+      this.bossManager.onEnemyKilled(enemy.getEnemyType());
       const pts = this.scoreManager.add(enemy.getPoints(), this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
       this.comboManager.onKill();
       this.statsManager.recordKill();
@@ -538,11 +601,19 @@ export class GameScene extends Phaser.Scene {
     this.bossGroup.remove(boss, false, false);
     this.bossManager.destroyBoss();
     this.hud.setBossHp(null);
+    const rewardType = this.getBossRewardPowerUp(bossLevel);
+    this.spawnSpecificPowerUp(rewardType, boss.x, boss.y + 36);
+    new FloatingText(this, boss.x, boss.y - 38, `NEW POWER: ${POWER_UP_LABELS[rewardType]}`, '#7cff6b');
     this.startLevelTransition(bossLevel);
   }
 
   private startLevelTransition(bossLevel: number): void {
     this.levelTransition = true;
+
+    // Each level starts fresh on the basic weapon.
+    this.powerUpManager.clearActive();
+    this.powerUpManager.clearStored();
+    this.syncHud();
 
     // Wipe the battlefield
     this.enemies.clear(true, true);
@@ -550,6 +621,10 @@ export class GameScene extends Phaser.Scene {
     this.bullets.clear(true, true);
     this.powerUps.clear(true, true);
     this.homingBullets = [];
+    if (this.ribbonLaser) {
+      this.ribbonLaser.destroy();
+      this.ribbonLaser = null;
+    }
 
     // Freeze the player physics body so the tween can move it off-screen freely
     const body = this.player.body as Phaser.Physics.Arcade.Body;
@@ -559,9 +634,9 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '42px',
       color: '#ffe050',
-      stroke: '#09101f',
-      strokeThickness: 8,
-      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 28, fill: true },
+      stroke: '#000000',
+      strokeThickness: 9,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 32, fill: true },
     }).setOrigin(0.5).setDepth(30).setAlpha(0).setScrollFactor(0);
 
     this.tweens.add({
@@ -593,7 +668,10 @@ export class GameScene extends Phaser.Scene {
               y: GAME_HEIGHT - 72,
               duration: 650,
               ease: 'Cubic.easeOut',
-              onComplete: () => {                body.enable = true;                banner.destroy();
+              onComplete: () => {
+                body.enable = true;
+                banner.destroy();
+                this.enemySpawnManager.setProgressionLevel(bossLevel + 1);
                 this.levelTransition = false;
               },
             });
@@ -616,7 +694,7 @@ export class GameScene extends Phaser.Scene {
     for (const child of this.enemies.getChildren()) {
       const enemy = child as Enemy;
       if (enemy.active) {
-        enemy.updateShootTimer(frameDelta, (x, y) => this.spawnEnemyBullet(x, y, 0, 300));
+        enemy.updateShootTimer(frameDelta, (x, y, vx, vy) => this.spawnEnemyBullet(x, y, vx, vy));
       }
     }
   }
@@ -666,22 +744,28 @@ export class GameScene extends Phaser.Scene {
     new FloatingText(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40, '⚠ RAGE MODE ⚠', '#ff8844');
     this.cameras.main.shake(200, 0.012);
 
+    const level = boss.getLevel();
     const speedMul = this.difficultyManager.getEnemySpeedMultiplier();
     switch (boss.getSpecialAbility()) {
       case 'drone_spawn':
-        this.spawnEnemyAt(boss.x - 60, boss.y + 20, 'small', speedMul);
-        this.spawnEnemyAt(boss.x + 60, boss.y + 20, 'small', speedMul);
+        this.spawnEnemyAt(boss.x - 60, boss.y + 20, this.getHenchmanTypeForLevel(level, 0), speedMul);
+        this.spawnEnemyAt(boss.x + 60, boss.y + 20, this.getHenchmanTypeForLevel(level, 1), speedMul);
         break;
       case 'meteor_shower':
         for (let i = 0; i < 5; i++) {
           this.time.delayedCall(i * 250, () => {
-            this.spawnEnemyAt(Phaser.Math.Between(40, GAME_WIDTH - 40), boss.y - 20, 'small', speedMul);
+            this.spawnEnemyAt(
+              Phaser.Math.Between(40, GAME_WIDTH - 40),
+              boss.y - 20,
+              this.getHenchmanTypeForLevel(level, i),
+              speedMul,
+            );
           });
         }
         break;
       case 'summon':
-        this.spawnEnemyAt(boss.x - 90, boss.y + 60, 'medium', speedMul);
-        this.spawnEnemyAt(boss.x + 90, boss.y + 60, 'medium', speedMul);
+        this.spawnEnemyAt(boss.x - 90, boss.y + 60, this.getHenchmanTypeForLevel(level, 0), speedMul);
+        this.spawnEnemyAt(boss.x + 90, boss.y + 60, this.getHenchmanTypeForLevel(level, 1), speedMul);
         break;
     }
   }
@@ -689,6 +773,69 @@ export class GameScene extends Phaser.Scene {
   private spawnEnemyAt(x: number, y: number, type: EnemyType, speedMul: number): void {
     const enemy = new Enemy(this, x, y, type, speedMul);
     this.enemies.add(enemy);
+  }
+
+  private getHenchmanTypeForLevel(level: number, index: number): EnemyType {
+    if (level >= 9) return index % 2 === 0 ? 'destroyer' : 'bomber';
+    if (level >= 7) return index % 3 === 0 ? 'destroyer' : 'bomber';
+    if (level >= 5) return index % 2 === 0 ? 'bomber' : 'heavy';
+    if (level >= 3) return index % 2 === 0 ? 'striker' : 'medium';
+    return 'small';
+  }
+
+  private getBossObjectiveStatusText(): string {
+    if (this.bossManager.getBoss()) {
+      return `BOSS ACTIVE  LV.${this.bossManager.getActiveBossLevel()} ${this.bossManager.getActiveBossName().toUpperCase()}`;
+    }
+
+    const nextBossLevel = this.bossManager.getNextBossLevel();
+    if (nextBossLevel === null) {
+      return 'ALL BOSSES CLEARED';
+    }
+
+    return `NEXT BOSS LV.${nextBossLevel}`;
+  }
+
+  private getBossObjectiveCounts(): [number, number, number] | null {
+    if (this.bossManager.getBoss()) {
+      return null;
+    }
+
+    const required = this.bossManager.getCurrentGateRequirements();
+    const progress = this.bossManager.getCurrentGateProgress();
+    if (!required || !progress) {
+      return null;
+    }
+
+    const remainingSmall = Math.max(0, required.small - progress.small);
+    const remainingMedium = Math.max(0, required.medium - progress.medium);
+    const remainingHeavy = Math.max(0, required.heavy - progress.heavy);
+    return [remainingSmall, remainingMedium, remainingHeavy];
+  }
+
+  private getBossRewardPowerUp(level: number): PowerUpType {
+    const rewards: PowerUpType[] = [
+      'rapidFire',
+      'doubleShot',
+      'tripleShot',
+      'shield',
+      'scoreMultiplier',
+      'slowTime',
+      'piercingShot',
+      'magnetShield',
+      'ribbonLaser',
+      'nuke',
+    ];
+    return rewards[Math.min(level - 1, rewards.length - 1)];
+  }
+
+  private spawnSpecificPowerUp(type: PowerUpType, x: number, y: number): void {
+    let powerUp = this.powerUps.get(x, y) as PowerUp | null;
+    if (!powerUp) {
+      powerUp = new PowerUp(this, x, y);
+      this.powerUps.add(powerUp);
+    }
+    powerUp.configure(type, x, y);
   }
 
   private spawnHomingBullet(x: number, y: number): void {
@@ -735,9 +882,9 @@ export class GameScene extends Phaser.Scene {
       color: '#ff3366',
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '36px',
-      stroke: '#09101f',
-      strokeThickness: 7,
-      shadow: { offsetX: 0, offsetY: 0, color: '#ff0022', blur: 24, fill: true },
+      stroke: '#000000',
+      strokeThickness: 8,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ff0022', blur: 28, fill: true },
     }).setOrigin(0.5).setDepth(30).setAlpha(0);
 
     this.tweens.add({
@@ -786,6 +933,7 @@ export class GameScene extends Phaser.Scene {
           if (!enemy.active || hitEnemies.has(enemy)) continue;
           if (enemy.y >= beamTop && Math.abs(enemy.x - beamX) < beamWidth + 14) {
             hitEnemies.add(enemy);
+            this.bossManager.onEnemyKilled(enemy.getEnemyType());
             const awarded = this.scoreManager.add(
               enemy.getPoints(),
               this.powerUpManager.isActive('scoreMultiplier'),
@@ -841,27 +989,30 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(47);
 
     const rows = [
-      ['🖱 / ←→ Keys', 'Move your ship'],
+      ['🖱 / ←→ Keys', 'Move left / right'],
+      ['↑↓ Keys / Drag', 'Move forward / backward'],
       ['SPACE / Right side', 'Fire'],
       ['E Key', 'Use stored power-up'],
       ['F Key', 'Toggle auto-fire'],
       ['ESC / P', 'Pause'],
       ['⚡ Power-ups', 'Collect to gain abilities'],
-      ['👾 Boss (skull)', 'Spawns every 10 kills'],
     ];
 
     rows.forEach(([key, desc], i) => {
       const y = cy - panelH / 2 + 68 + i * 32;
       this.add.text(cx - 14, y, key, {
         fontFamily: FONT, fontSize: '13px', color: '#ffe050',
+        stroke: '#04101e', strokeThickness: 3,
       }).setOrigin(1, 0.5).setDepth(47);
       this.add.text(cx + 6, y, desc, {
-        fontFamily: FONT, fontSize: '13px', color: '#8ab8cc',
+        fontFamily: FONT, fontSize: '13px', color: '#d2ebf9',
+        stroke: '#04101e', strokeThickness: 3,
       }).setOrigin(0, 0.5).setDepth(47);
     });
 
     const hint = this.add.text(cx, cy + panelH / 2 - 20, 'TAP ANYWHERE TO START', {
-      fontFamily: FONT, fontSize: '12px', color: '#2c5070', letterSpacing: 2,
+      fontFamily: FONT, fontSize: '12px', color: '#9ac8e8', letterSpacing: 2,
+      stroke: '#04101e', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(47);
 
     const all = [dim, panel, title, hint];
@@ -920,7 +1071,8 @@ export class GameScene extends Phaser.Scene {
     };
 
     const hint = this.add.text(cx, cy + 84, 'ESC / P to resume', {
-      fontFamily: FONT, fontSize: '13px', color: '#3a6080',
+      fontFamily: FONT, fontSize: '13px', color: '#b8def2',
+      stroke: '#04101e', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(52);
 
     this.pauseOverlay = this.add.container(0, 0, [dim, panel, title, hint]).setDepth(50);
@@ -946,6 +1098,8 @@ export class GameScene extends Phaser.Scene {
       this.player.getLives(),
       this.timerManager.getRemainingSeconds(),
       this.powerUpManager.getDisplayItems(),
+      this.getBossObjectiveStatusText(),
+      this.getBossObjectiveCounts(),
       this.audioManager.isMuted(),
       this.powerUpManager.getStored(),
       this.player.isAutoFireEnabled(),
@@ -957,6 +1111,10 @@ export class GameScene extends Phaser.Scene {
 
     this.gameFinished = true;
     this.audioManager.destroy();
+    if (this.ribbonLaser) {
+      this.ribbonLaser.destroy();
+      this.ribbonLaser = null;
+    }
     const summary = this.statsManager.getSummary();
     const grade = this.statsManager.computeGrade(this.scoreManager.getScore());
 

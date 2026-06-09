@@ -4,11 +4,12 @@
 
 | Key | Action |
 |---|---|
-| ← / → Arrow | Move player left / right |
+| Arrow Keys | Move |
 | Space | Fire (hold to auto-fire while key is held) |
 | F | Toggle **Auto-Fire** (continuous fire without holding Space) |
 | E | Use first **stored power-up** immediately |
 | M | Toggle mute |
+| ESC / P | Pause / resume |
 
 ## Touch
 
@@ -16,7 +17,7 @@ The screen is split into two zones:
 
 | Zone | Action |
 |---|---|
-| Left half of screen | Movement — pointer X controls player X (clamped to canvas) |
+| Left half of screen | Movement — pointer controls player position |
 | Right half / FIRE button | Fire — held for continuous shooting |
 
 FIRE button is a circle at bottom-right (`x = GAME_WIDTH − 68, y = GAME_HEIGHT − 78, r = 46`).  

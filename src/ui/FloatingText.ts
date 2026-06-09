@@ -6,9 +6,9 @@ export class FloatingText extends Phaser.GameObjects.Text {
       color,
       fontFamily: 'Arial Black, sans-serif',
       fontSize: '20px',
-      stroke: '#060c1a',
-      strokeThickness: 4,
-      shadow: { offsetX: 0, offsetY: 0, color, blur: 10, fill: true },
+      stroke: '#000000',
+      strokeThickness: 6,
+      shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 8, fill: true },
     });
 
     scene.add.existing(this);

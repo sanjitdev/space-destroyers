@@ -1,22 +1,52 @@
 import Phaser from 'phaser';
 import { Enemy } from '../entities/Enemy';
-import { GAME_WIDTH } from '../utils/Constants';
+import { GAME_WIDTH, type EnemyType } from '../utils/Constants';
 import { DifficultyManager } from './DifficultyManager';
 import { pickWeighted, randomBetween } from '../utils/Random';
 
 const FORMATION_INTERVAL_MS = 12_000;
 
-type FormationFn = (scene: Phaser.Scene, group: Phaser.Physics.Arcade.Group, speedMult: number) => void;
+type FormationFn = (scene: Phaser.Scene, group: Phaser.Physics.Arcade.Group, speedMult: number, progressionLevel: number) => void;
 
-const spawnAt = (scene: Phaser.Scene, group: Phaser.Physics.Arcade.Group, x: number, y: number, speedMult: number, delayMs: number): void => {
+const getFormationType = (progressionLevel: number, index: number): EnemyType => {
+  if (progressionLevel >= 9) return index % 2 === 0 ? 'destroyer' : 'bomber';
+  if (progressionLevel >= 7) return index % 3 === 0 ? 'destroyer' : 'bomber';
+  if (progressionLevel >= 5) return index % 2 === 0 ? 'bomber' : 'heavy';
+  if (progressionLevel >= 3) return index % 2 === 0 ? 'striker' : 'medium';
+  return 'small';
+};
+
+const isTypeUnlocked = (type: EnemyType, progressionLevel: number): boolean => {
+  switch (type) {
+    case 'striker':
+      return progressionLevel >= 3;
+    case 'bomber':
+      return progressionLevel >= 5;
+    case 'destroyer':
+      return progressionLevel >= 7;
+    default:
+      return true;
+  }
+};
+
+const spawnAt = (
+  scene: Phaser.Scene,
+  group: Phaser.Physics.Arcade.Group,
+  x: number,
+  y: number,
+  type: EnemyType,
+  speedMult: number,
+  delayMs: number,
+): void => {
   scene.time.delayedCall(delayMs, () => {
-    group.add(new Enemy(scene, x, y, 'small', speedMult));
+    const enemy = new Enemy(scene, x, y, type, speedMult);
+    group.add(enemy);
   });
 };
 
 const FORMATIONS: FormationFn[] = [
   // V-shape: 5 enemies
-  (scene, group, mult) => {
+  (scene, group, mult, progressionLevel) => {
     const cx = GAME_WIDTH / 2;
     const pts = [
       { x: cx,      y: -20 },
@@ -25,21 +55,22 @@ const FORMATIONS: FormationFn[] = [
       { x: cx - 120, y: -84 },
       { x: cx + 120, y: -84 },
     ];
-    pts.forEach(({ x, y }, i) => spawnAt(scene, group, x, y, mult, i * 60));
+    pts.forEach(({ x, y }, i) => spawnAt(scene, group, x, y, getFormationType(progressionLevel, i), mult, i * 60));
   },
   // Grid: 2 rows × 4 cols
-  (scene, group, mult) => {
+  (scene, group, mult, progressionLevel) => {
     const startX = GAME_WIDTH / 2 - 90;
     for (let row = 0; row < 2; row++) {
       for (let col = 0; col < 4; col++) {
-        spawnAt(scene, group, startX + col * 60, -20 - row * 48, mult, (row * 4 + col) * 70);
+        const index = row * 4 + col;
+        spawnAt(scene, group, startX + col * 60, -20 - row * 48, getFormationType(progressionLevel, index), mult, index * 70);
       }
     }
   },
   // Diagonal sweep: 6 enemies from left to right
-  (scene, group, mult) => {
+  (scene, group, mult, progressionLevel) => {
     for (let i = 0; i < 6; i++) {
-      spawnAt(scene, group, 48 + i * 72, -20 - i * 36, mult, i * 100);
+      spawnAt(scene, group, 48 + i * 72, -20 - i * 36, getFormationType(progressionLevel, i), mult, i * 100);
     }
   },
 ];
@@ -47,6 +78,7 @@ const FORMATIONS: FormationFn[] = [
 export class EnemySpawnManager {
   private cooldownMs = 250;
   private formationCooldownMs = FORMATION_INTERVAL_MS;
+  private progressionLevel = 1;
   private readonly scene: Phaser.Scene;
   private readonly group: Phaser.Physics.Arcade.Group;
   private readonly difficultyManager: DifficultyManager;
@@ -67,13 +99,20 @@ export class EnemySpawnManager {
     this.formationCooldownMs -= deltaMs;
     if (this.formationCooldownMs <= 0) {
       const fn = FORMATIONS[Math.floor(Math.random() * FORMATIONS.length)];
-      fn(this.scene, this.group, this.difficultyManager.getEnemySpeedMultiplier());
+      fn(this.scene, this.group, this.difficultyManager.getEnemySpeedMultiplier(), this.progressionLevel);
       this.formationCooldownMs = FORMATION_INTERVAL_MS;
     }
   }
 
+  setProgressionLevel(level: number): void {
+    this.progressionLevel = Math.max(1, level);
+  }
+
   private spawnEnemy(): void {
-    const type = pickWeighted(this.difficultyManager.getEnemyWeights());
+    const availableWeights = this.difficultyManager
+      .getEnemyWeights()
+      .filter(({ value, weight }) => weight > 0 && isTypeUnlocked(value, this.progressionLevel));
+    const type = pickWeighted(availableWeights);
     const enemy = new Enemy(
       this.scene,
       randomBetween(36, GAME_WIDTH - 36),

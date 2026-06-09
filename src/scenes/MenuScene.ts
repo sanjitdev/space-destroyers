@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   GAME_HEIGHT,
   GAME_WIDTH,
+  POWER_UP_TYPES,
   SHIP_CONFIGS,
   THEME_IDS,
   THEMES,
@@ -60,8 +61,9 @@ export class MenuScene extends Phaser.Scene {
 
     // Subtitle tagline
     this.add.text(GAME_WIDTH / 2, 90, 'DEFEND  ·  SURVIVE  ·  CONQUER', {
-      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#4a8aaa',
+      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#9fd8ee',
       letterSpacing: 4,
+      stroke: '#04101e', strokeThickness: 3,
     }).setOrigin(0.5);
 
     // ── High score + level ───────────────────────────────────────
@@ -71,16 +73,18 @@ export class MenuScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 8, fill: true },
     }).setOrigin(0.5);
     this.add.text(GAME_WIDTH / 2, 158, `LEVEL  ${level + 1}`, {
-      fontFamily: FONT, fontSize: '13px', color: '#5588aa', letterSpacing: 3,
+      fontFamily: FONT, fontSize: '13px', color: '#b7ddf2', letterSpacing: 3,
+      stroke: '#04101e', strokeThickness: 3,
     }).setOrigin(0.5);
 
     // ── Section divider helper ───────────────────────────────────
     const sectionLabel = (y: number, text: string): void => {
       this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 40, 1, 0x1a3060, 0.7).setOrigin(0.5);
       this.add.text(GAME_WIDTH / 2, y - 8, `  ${text}  `, {
-        fontFamily: FONT, fontSize: '11px', color: '#3a6080', letterSpacing: 4,
+        fontFamily: FONT, fontSize: '11px', color: '#9ac8e8', letterSpacing: 4,
         backgroundColor: '#060e1c',
         padding: { x: 6, y: 2 },
+        stroke: '#04101e', strokeThickness: 3,
       }).setOrigin(0.5, 1);
     };
 
@@ -99,7 +103,8 @@ export class MenuScene extends Phaser.Scene {
       stroke: '#060c1a', strokeThickness: 4,
     }).setOrigin(0.5);
     const shipDescText = this.add.text(GAME_WIDTH / 2, 342, '', {
-      fontFamily: FONT, fontSize: '14px', color: '#7aaabb',
+      fontFamily: FONT, fontSize: '14px', color: '#bfe1f4',
+      stroke: '#04101e', strokeThickness: 3,
     }).setOrigin(0.5);
     const shipBestText = this.add.text(GAME_WIDTH / 2, 362, '', {
       fontFamily: FONT, fontSize: '11px', color: '#ffe050', letterSpacing: 1,
@@ -112,7 +117,7 @@ export class MenuScene extends Phaser.Scene {
       shipNameText.setText(cfg.label).setColor(locked ? '#446677' : '#e8faff');
       shipDescText
         .setText(locked ? `🔒  Unlock at ${cfg.unlockScore.toLocaleString()} pts` : cfg.description)
-        .setColor(locked ? '#445566' : '#7aaabb');
+        .setColor(locked ? '#6f91aa' : '#bfe1f4');
       const best = Storage.getShipBest(selectedShipIdx);
       shipBestText.setText(locked ? '' : best > 0 ? `★  Best  ${best.toLocaleString()}` : '').setVisible(!locked && best > 0);
       if (!locked) Storage.setSelectedShipIndex(selectedShipIdx);
@@ -219,7 +224,8 @@ export class MenuScene extends Phaser.Scene {
 
       // Detail line
       this.add.text(cx + modeCardW / 2, cy + 97, detail, {
-        fontFamily: 'Arial, sans-serif', fontSize: '10px', color: '#3a5a78',
+        fontFamily: 'Arial, sans-serif', fontSize: '10px', color: '#a9cee6',
+        stroke: '#04101e', strokeThickness: 2,
       }).setOrigin(0.5);
 
       // Hit zone
@@ -235,12 +241,19 @@ export class MenuScene extends Phaser.Scene {
 
     // ── Bottom icon bar: Settings · Power-ups ────────────────────
     const iconBarY = 624;
-    const iconBtnStyle = { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#4a7a9a', letterSpacing: 1 };
+    const iconBtnStyle = {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '13px',
+      color: '#a8d3e8',
+      letterSpacing: 1,
+      stroke: '#04101e',
+      strokeThickness: 3,
+    };
 
     const settingsBtn = this.add.text(GAME_WIDTH / 2 - 80, iconBarY, '⚙️  Settings', iconBtnStyle)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     settingsBtn.on('pointerover', () => settingsBtn.setColor('#aaccdd'));
-    settingsBtn.on('pointerout',  () => settingsBtn.setColor('#4a7a9a'));
+    settingsBtn.on('pointerout',  () => settingsBtn.setColor('#a8d3e8'));
     settingsBtn.on('pointerdown', () => this.showSettingsOverlay(bg));
 
     this.add.text(GAME_WIDTH / 2, iconBarY + 1, '|', { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#1a3050' }).setOrigin(0.5);
@@ -248,11 +261,12 @@ export class MenuScene extends Phaser.Scene {
     const infoBtn = this.add.text(GAME_WIDTH / 2 + 80, iconBarY, 'ⓘ  Power-Ups', iconBtnStyle)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     infoBtn.on('pointerover', () => infoBtn.setColor('#6cf3ff'));
-    infoBtn.on('pointerout',  () => infoBtn.setColor('#4a7a9a'));
+    infoBtn.on('pointerout',  () => infoBtn.setColor('#a8d3e8'));
     infoBtn.on('pointerdown', () => this.showPowerUpOverlay());
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 28, '← → to move  ·  SPACE or FIRE button to shoot', {
-      fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#2a4060',
+      fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#b0d8ee',
+      stroke: '#04101e', strokeThickness: 3,
     }).setOrigin(0.5);
 
     this.input.keyboard?.once('keydown-SPACE', () => startGame('timed'));
@@ -289,7 +303,8 @@ export class MenuScene extends Phaser.Scene {
 
     // ── Colour Theme ────────────────────────────────────────────
     container.add(this.add.text(panelX + 22, panelY + 62, 'COLOUR THEME', {
-      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+      fontFamily: FONT, fontSize: '10px', color: '#9ac8e8', letterSpacing: 3,
+      stroke: '#04101e', strokeThickness: 3,
     }));
 
     const CARD_W = 66;
@@ -336,7 +351,8 @@ export class MenuScene extends Phaser.Scene {
 
       const lbl = this.add.text(cx + CARD_W / 2, cardsY + 56, THEMES[id].label.toUpperCase(), {
         fontFamily: FONT, fontSize: '8px',
-        color: id === selectedThemeId ? '#aaccdd' : '#3e6080', letterSpacing: 1,
+        color: id === selectedThemeId ? '#d7eefc' : '#7fa8c0', letterSpacing: 1,
+        stroke: '#04101e', strokeThickness: 2,
       }).setOrigin(0.5, 0);
       cardLabels.push(lbl);
       container.add(lbl);
@@ -358,7 +374,7 @@ export class MenuScene extends Phaser.Scene {
         Storage.setTheme(id);
         bgSprite.setTint(THEMES[id].bgTint);
         cardGfxList.forEach((g, j) => drawCard(g, THEME_IDS[j], THEME_IDS[j] === selectedThemeId));
-        cardLabels.forEach((l, j) => l.setColor(THEME_IDS[j] === selectedThemeId ? '#aaccdd' : '#3e6080'));
+        cardLabels.forEach((l, j) => l.setColor(THEME_IDS[j] === selectedThemeId ? '#d7eefc' : '#7fa8c0'));
         cardChecks.forEach((c, j) => c.setVisible(THEME_IDS[j] === selectedThemeId));
       });
     });
@@ -367,7 +383,8 @@ export class MenuScene extends Phaser.Scene {
     const muteLineY = panelY + 182;
     container.add(this.add.rectangle(W / 2, muteLineY, panelW - 36, 1, 0x1a3060, 0.6));
     container.add(this.add.text(panelX + 22, muteLineY + 12, 'SOUND', {
-      fontFamily: FONT, fontSize: '10px', color: '#3a6080', letterSpacing: 3,
+      fontFamily: FONT, fontSize: '10px', color: '#9ac8e8', letterSpacing: 3,
+      stroke: '#04101e', strokeThickness: 3,
     }));
 
     const muteLbl = this.add.text(panelX + panelW - 22, muteLineY + 12, '', {
@@ -383,11 +400,6 @@ export class MenuScene extends Phaser.Scene {
       Storage.setMuted(!Storage.getMuted());
       refreshMuteToggle();
     });
-
-    // ── Close ───────────────────────────────────────────────────
-    container.add(this.add.text(W / 2, panelY + panelH - 10, 'TAP ANYWHERE TO CLOSE', {
-      fontFamily: FONT, fontSize: '9px', color: '#1e3a50', letterSpacing: 4,
-    }).setOrigin(0.5, 1));
 
     this.tweens.add({ targets: container, alpha: 1, duration: 160 });
 
@@ -434,22 +446,38 @@ export class MenuScene extends Phaser.Scene {
     // Divider
     container.add(this.add.rectangle(W / 2, panelY + 48, panelW - 36, 1, 0x1a3060, 0.8));
 
-    // Power-up rows
-    const rows = [
-      { key: 'powerup-extraLife',       label: '+1 Life',        desc: 'Gain one life (max 5)' },
-      { key: 'powerup-rapidFire',       label: 'Rapid Fire',     desc: 'Halves fire cooldown for 10 s' },
-      { key: 'powerup-tripleShot',      label: 'Triple Shot',    desc: '3 bullets per shot for 10 s' },
-      { key: 'powerup-shield',          label: 'Shield',         desc: 'Absorbs one hit (single use)' },
-      { key: 'powerup-magnetShield',    label: 'Magnet Shield',  desc: 'Absorbs nearby bullets & hits for 10 s' },
-      { key: 'powerup-scoreMultiplier', label: '2× Score',       desc: 'Doubles kill points for 10 s' },
-      { key: 'powerup-piercingShot',    label: 'Piercing Shot',  desc: 'Bullets pierce through enemies for 10 s' },
-      { key: 'powerup-slowTime',        label: 'Slow Time',      desc: 'Halves all enemy speed for 10 s' },
-      { key: 'powerup-laser',           label: 'Mega Laser',     desc: 'Fires an instant full-width beam' },
-      { key: 'powerup-nuke',            label: 'Nuke',           desc: 'Destroys every enemy on screen instantly' },
-    ] as const;
+    // Keep descriptions centralized so every defined power-up appears in the list.
+    const powerUpDescriptions: Record<(typeof POWER_UP_TYPES)[number], string> = {
+      rapidFire: 'Halves fire cooldown until you are hit',
+      tripleShot: '3 bullets per shot until you are hit',
+      doubleShot: '2 bullets per shot until you are hit',
+      shield: 'Blocks hits and stacks up to 3 charges',
+      scoreMultiplier: 'Doubles kill points for 10 s',
+      slowTime: 'Halves all enemy speed for 10 s',
+      laser: 'Fires an instant full-width beam',
+      extraLife: 'Gain one life (max 5)',
+      nuke: 'Destroys every enemy on screen instantly',
+      piercingShot: 'Bullets pierce through enemies for 10 s',
+      magnetShield: 'Absorbs nearby bullets & hits for 10 s',
+      ribbonLaser: 'Summons rotating ribbons that shred enemies',
+    };
+
+    const rows = POWER_UP_TYPES.map((type) => ({
+      key: `powerup-${type}`,
+      label: type === 'scoreMultiplier'
+        ? '2× Score'
+        : type === 'extraLife'
+          ? '+1 Life'
+          : type === 'laser'
+            ? 'Mega Laser'
+            : type === 'nuke'
+              ? 'Nuke'
+              : type.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()),
+      desc: powerUpDescriptions[type],
+    }));
 
     const startY = panelY + 58;
-    const rowH   = 52;
+    const rowH   = 44;
     const iconX  = panelX + 36;
     const textX  = panelX + 66;
 
@@ -471,7 +499,8 @@ export class MenuScene extends Phaser.Scene {
       }));
 
       container.add(this.add.text(textX, y + rowH / 2 + 8, desc, {
-        fontFamily: 'Arial, sans-serif', fontSize: '12px', color: '#4e7a99',
+        fontFamily: 'Arial, sans-serif', fontSize: '12px', color: '#b3d8ee',
+        stroke: '#04101e', strokeThickness: 2,
       }));
     });
 
@@ -479,14 +508,10 @@ export class MenuScene extends Phaser.Scene {
     const noteY = panelY + panelH - 52;
     container.add(this.add.rectangle(W / 2, noteY + 14, panelW - 36, 1, 0x1a3060, 0.5));
     container.add(this.add.text(W / 2, noteY + 22, 'During boss fights, power-ups are banked (max 3).  Press  E  to use the first stored one instantly.', {
-      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#3e6a88',
+      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#b3d8ee',
       align: 'center', wordWrap: { width: panelW - 48 },
+      stroke: '#04101e', strokeThickness: 2,
     }).setOrigin(0.5, 0));
-
-    // Close hint
-    container.add(this.add.text(W / 2, panelY + panelH - 10, 'TAP ANYWHERE TO CLOSE', {
-      fontFamily: FONT, fontSize: '9px', color: '#1e3a50', letterSpacing: 4,
-    }).setOrigin(0.5, 1));
 
     // Fade in
     this.tweens.add({ targets: container, alpha: 1, duration: 160 });

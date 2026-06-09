@@ -23,11 +23,15 @@ Web Audio API synthesiser — no audio files. All sounds generated procedurally.
 
 ## BossManager (`src/managers/BossManager.ts`)
 
-Kill-based boss spawner. Tracks which of the 10 `BOSS_LEVEL_CONFIGS` entries to spawn next.
+Objective-gated boss spawner. Tracks which `BOSS_LEVEL_CONFIGS` entry spawns next and when gate progress is complete.
 
 | Method | Description |
 |---|---|
-| `checkSpawn(totalKills)` | Compares kills against `cfg.killsRequired`; spawns + returns true when threshold crossed |
+| `checkSpawn()` | Spawns next boss when current objective gate is complete |
+| `onEnemyKilled(type)` | Increments gate progress for small/medium/heavy |
+| `getCurrentGateRequirements()` | Returns objective requirements for next boss |
+| `getCurrentGateProgress()` | Returns current objective progress |
+| `getNextBossLevel()` | Returns next boss level or null |
 | `getBoss()` | Returns live Boss or null |
 | `getActiveBossName()` / `getActiveBossLevel()` | Metadata for HUD |
 | `destroyBoss()` | Stops enter tween, destroys sprite |
@@ -66,7 +70,7 @@ Stage advances every `DIFFICULTY_STEP_MS = 10_000` ms of elapsed time.
 |---|---|
 | `getSpawnIntervalMs()` | `max(320, 920 − stage × 110)` |
 | `getEnemySpeedMultiplier()` | `1 + stage × 0.18` |
-| `getEnemyWeights()` | small weight decreases, medium/heavy increase per stage |
+| `getEnemyWeights()` | stage-based weights across small/medium/heavy/striker/bomber/destroyer |
 
 ---
 
@@ -77,6 +81,7 @@ Owns the spawn timer. Uses `DifficultyManager` for interval and weights.
 | Method | Description |
 |---|---|
 | `update(deltaMs)` | Decrements cooldown; calls `spawnEnemy()` when ready (handles catch-up) |
+| `setProgressionLevel(level)` | Unlocks higher enemy families over level progression |
 
 Enemy spawns at random X in `[36, GAME_WIDTH − 36]`, y = −32.
 
@@ -84,15 +89,22 @@ Enemy spawns at random X in `[36, GAME_WIDTH − 36]`, y = −32.
 
 ## PowerUpManager (`src/managers/PowerUpManager.ts`)
 
-Tracks active (timed) and stored (boss-fight inventory) power-ups.
+Tracks active and stored power-ups.
 
 ### Active power-ups
 ```typescript
-activate(type)       // starts POWER_UP_DURATION_MS = 10_000 ms countdown
+activate(type)       // activate effect
 isActive(type)       // checked each frame by GameScene
 clearActive()        // used by EMP Pulse boss special
-getDisplayItems()    // returns "Label Xs" strings for HUD strip
+getDisplayItems()    // returns HUD labels
+consumeShieldCharge()// shield stack consumption
 ```
+
+Current timing model:
+
+- Most power-ups are persistent until player takes damage or level resets
+- `ribbonLaser` has a dedicated 15-second timer
+- Shield stacks up to 3 charges
 
 ### Stored power-ups (max 3, used during boss fights)
 ```typescript
@@ -100,12 +112,13 @@ tryStore(type)       // returns false if storage full
 useStored()          // pops first slot; activates it (or triggers laser); returns type or null
 getStored()          // readonly PowerUpType[] for HUD slots
 hasStoredSlot()      // true if < 3 stored
+clearStored()        // clear all stored entries
 ```
 
 ### Drop RNG
 ```typescript
 shouldDrop()         // chance(POWER_UP_DROP_CHANCE = 0.22)
-getRandomType()      // pickOne(POWER_UP_TYPES)
+getRandomType()      // weighted pick from POWER_UP_WEIGHTS
 ```
 
 ---
@@ -132,7 +145,7 @@ Tracks per-run stats for grade calculation.
 | `recordBossKill()` | Boss destroyed |
 | `recordDamage()` | Player lost a life |
 | `recordCombo(n)` | Updates peak combo |
-| `getEnemiesKilled()` | Total kills (used by BossManager) |
+| `getEnemiesKilled()` | Total kills (run summary metric) |
 | `getAccuracy()` | `min(1, enemiesKilled / shotsFired)` |
 | `computeGrade(score)` | Returns `'S'|'A'|'B'|'C'|'D'` |
 | `getSummary()` | Object with all stats for GameOverScene |

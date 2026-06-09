@@ -84,9 +84,12 @@ export class GameOverScene extends Phaser.Scene {
     const highLabel = isNewBest ? '★  NEW HIGH SCORE  ★' : `BEST  ${data.highScore.toLocaleString()}`;
     const highText = this.add.text(GAME_WIDTH / 2, 336, highLabel, {
       fontFamily: FONT, fontSize: '13px',
-      color: isNewBest ? '#ffe050' : '#3a6080',
+      color: isNewBest ? '#ffe050' : '#aed4ea',
       letterSpacing: 2,
-      shadow: isNewBest ? { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 8, fill: true } : undefined,
+      stroke: '#061220', strokeThickness: 3,
+      shadow: isNewBest
+        ? { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 8, fill: true }
+        : { offsetX: 0, offsetY: 0, color: '#57a8d8', blur: 6, fill: true },
     }).setOrigin(0.5).setAlpha(0);
 
     // ── Stats card ───────────────────────────────────────────────
@@ -104,8 +107,12 @@ export class GameOverScene extends Phaser.Scene {
     statRows.forEach((row, i) => {
       const y = 404 + i * 28;
       statTextObjs.push(
-        this.add.text(GAME_WIDTH / 2 - 14, y, row[0], { fontFamily: FONT, fontSize: '14px', color: '#6699bb' }).setOrigin(1, 0).setAlpha(0),
-        this.add.text(GAME_WIDTH / 2 + 14, y, row[1], { fontFamily: FONT, fontSize: '14px', color: '#6699bb' }).setOrigin(0, 0).setAlpha(0),
+        this.add.text(GAME_WIDTH / 2 - 14, y, row[0], {
+          fontFamily: FONT, fontSize: '14px', color: '#c8e6f7', stroke: '#061220', strokeThickness: 3,
+        }).setOrigin(1, 0).setAlpha(0),
+        this.add.text(GAME_WIDTH / 2 + 14, y, row[1], {
+          fontFamily: FONT, fontSize: '14px', color: '#c8e6f7', stroke: '#061220', strokeThickness: 3,
+        }).setOrigin(0, 0).setAlpha(0),
       );
     });
 
@@ -115,7 +122,8 @@ export class GameOverScene extends Phaser.Scene {
       .setStrokeStyle(1, 0x0a1e38, 0.7).setAlpha(0);
     const careerText = this.add.text(GAME_WIDTH / 2, careerY,
       `CAREER  ·  ${Storage.getGamesPlayed()} runs  ·  ${Storage.getTotalKills().toLocaleString()} kills  ·  ${Storage.getTotalBossesKilled()} bosses`, {
-      fontFamily: FONT, fontSize: '11px', color: '#2c5070', letterSpacing: 1,
+      fontFamily: FONT, fontSize: '11px', color: '#a8d0e8', letterSpacing: 1,
+      stroke: '#061220', strokeThickness: 2,
     }).setOrigin(0.5).setAlpha(0);
 
     // ── Buttons ──────────────────────────────────────────────────
