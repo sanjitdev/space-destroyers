@@ -145,12 +145,14 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     if (this.hp <= 0) return true;
 
-    // Hit flash
-    this.setAlpha(0.12);
-    this.glow.setAlpha(0.90);
-    this.scene.time.delayedCall(85, () => {
-      if (!this.active) return;
-      this.setAlpha(1);
+    // Subtle hit flash: quick pulse instead of harsh strobe.
+    this.setAlpha(0.78);
+    this.glow.setAlpha(0.42);
+    this.scene.tweens.add({
+      targets: [this, this.glow],
+      alpha: 1,
+      duration: 95,
+      ease: 'Sine.easeOut',
     });
     return false;
   }

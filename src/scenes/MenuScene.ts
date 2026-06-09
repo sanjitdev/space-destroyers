@@ -8,7 +8,6 @@ import {
   SHIP_CONFIGS,
   THEME_IDS,
   THEMES,
-  getPlayerLevel,
   type DifficultyId,
   type GameMode,
 } from '../utils/Constants';
@@ -24,6 +23,7 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     const highScore = Storage.getHighScore();
+    const unlockedShipLevel = Storage.getMaxUnlockedShipLevel();
     const theme = THEMES[Storage.getTheme()];
 
     // ── Parallax background ──────────────────────────────────────
@@ -70,7 +70,7 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ── High score + level ───────────────────────────────────────
-    const level = getPlayerLevel(highScore);
+    const level = unlockedShipLevel;
     this.add.text(GAME_WIDTH / 2, 132, `HIGH  ${highScore.toLocaleString()}`, {
       fontFamily: FONT, fontSize: '18px', color: '#ffe050',
       shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 8, fill: true },
@@ -98,7 +98,7 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(GAME_WIDTH / 2, 298, GAME_WIDTH - 36, 160, PANEL, 0.82)
       .setStrokeStyle(1, 0x0f2a48, 0.9);
 
-    let selectedShipIdx = Storage.getSelectedShipIndex();
+    let selectedShipIdx = Math.min(Storage.getSelectedShipIndex(), unlockedShipLevel - 1);
 
     const shipImage = this.add.image(GAME_WIDTH / 2, 268, SHIP_CONFIGS[selectedShipIdx].texture).setScale(3);
     const shipNameText = this.add.text(GAME_WIDTH / 2, 316, '', {
@@ -115,11 +115,11 @@ export class MenuScene extends Phaser.Scene {
 
     const refreshShip = (): void => {
       const cfg = SHIP_CONFIGS[selectedShipIdx];
-      const locked = highScore < cfg.unlockScore;
+      const locked = selectedShipIdx >= unlockedShipLevel;
       shipImage.setTexture(cfg.texture).setScale(cfg.previewScale).setTint(locked ? 0x334455 : 0xffffff).setAlpha(locked ? 0.4 : 1);
       shipNameText.setText(cfg.label).setColor(locked ? '#446677' : '#e8faff');
       shipDescText
-        .setText(locked ? `🔒  Unlock at ${cfg.unlockScore.toLocaleString()} pts` : cfg.description)
+        .setText(locked ? `🔒  Reach Level ${selectedShipIdx + 1} to unlock` : cfg.description)
         .setColor(locked ? '#6f91aa' : '#bfe1f4');
       const best = Storage.getShipBest(selectedShipIdx);
       shipBestText.setText(locked ? '' : best > 0 ? `★  Best  ${best.toLocaleString()}` : '').setVisible(!locked && best > 0);

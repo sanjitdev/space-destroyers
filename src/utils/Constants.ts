@@ -28,10 +28,10 @@ export interface EnemyConfig {
 export const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
   small:     { type: 'small',     texture: 'enemy-small',     health: 1,  speed: 170, points: 10,  tint: 0xffffff, scale: 1 },
   medium:    { type: 'medium',    texture: 'enemy-medium',    health: 2,  speed: 135, points: 25,  tint: 0xffffff, scale: 1 },
-  heavy:     { type: 'heavy',     texture: 'enemy-heavy',     health: 5,  speed: 92,  points: 50,  tint: 0xffffff, scale: 1 },
+  heavy:     { type: 'heavy',     texture: 'enemy-heavy',     health: 8,  speed: 92,  points: 50,  tint: 0xffffff, scale: 1 },
   striker:   { type: 'striker',   texture: 'enemy-striker',   health: 3,  speed: 215, points: 40,  tint: 0xffffff, scale: 1 },
-  bomber:    { type: 'bomber',    texture: 'enemy-bomber',    health: 7,  speed: 118, points: 80,  tint: 0xffffff, scale: 1 },
-  destroyer: { type: 'destroyer', texture: 'enemy-destroyer', health: 12, speed: 84,  points: 130, tint: 0xffffff, scale: 1 },
+  bomber:    { type: 'bomber',    texture: 'enemy-bomber',    health: 11, speed: 118, points: 80,  tint: 0xffffff, scale: 1 },
+  destroyer: { type: 'destroyer', texture: 'enemy-destroyer', health: 18, speed: 84,  points: 130, tint: 0xffffff, scale: 1 },
 };
 
 export const POWER_UP_TYPES = ['rapidFire', 'tripleShot', 'doubleShot', 'shield', 'scoreMultiplier', 'slowTime', 'laser', 'extraLife', 'nuke', 'piercingShot', 'magnetShield', 'ribbonLaser'] as const satisfies readonly PowerUpType[];

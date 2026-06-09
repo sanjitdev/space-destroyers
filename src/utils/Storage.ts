@@ -4,6 +4,7 @@ const HIGH_SCORE_KEY = 'space-destroyers-high-score';
 const MUTED_KEY = 'space-destroyers-muted';
 const THEME_KEY = 'space-destroyers-theme';
 const SHIP_KEY = 'space-destroyers-ship';
+const SHIP_LEVEL_KEY = 'space-destroyers-ship-level';
 const DIFFICULTY_KEY = 'space-destroyers-difficulty';
 const GAMES_PLAYED_KEY = 'space-destroyers-games-played';
 const TOTAL_KILLS_KEY = 'space-destroyers-total-kills';
@@ -59,6 +60,24 @@ export const Storage = {
   setSelectedShipIndex(index: number): void {
     withStorage(undefined, () => {
       window.localStorage.setItem(SHIP_KEY, String(index));
+      return undefined;
+    });
+  },
+
+  getMaxUnlockedShipLevel(): number {
+    return withStorage(1, () => {
+      const stored = Number.parseInt(window.localStorage.getItem(SHIP_LEVEL_KEY) ?? '1', 10);
+      if (!Number.isFinite(stored)) return 1;
+      return Math.min(SHIP_CONFIGS.length, Math.max(1, stored));
+    });
+  },
+  unlockShipLevel(level: number): void {
+    withStorage(undefined, () => {
+      const clampedLevel = Math.min(SHIP_CONFIGS.length, Math.max(1, level));
+      const current = this.getMaxUnlockedShipLevel();
+      if (clampedLevel > current) {
+        window.localStorage.setItem(SHIP_LEVEL_KEY, String(clampedLevel));
+      }
       return undefined;
     });
   },

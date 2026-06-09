@@ -5,6 +5,7 @@ import { DifficultyManager } from './DifficultyManager';
 import { pickWeighted, randomBetween } from '../utils/Random';
 
 const FORMATION_INTERVAL_MS = 12_000;
+const ENEMY_ENTRY_Y = 190;
 
 type FormationFn = (scene: Phaser.Scene, group: Phaser.Physics.Arcade.Group, speedMult: number, progressionLevel: number) => void;
 
@@ -49,11 +50,11 @@ const FORMATIONS: FormationFn[] = [
   (scene, group, mult, progressionLevel) => {
     const cx = GAME_WIDTH / 2;
     const pts = [
-      { x: cx,      y: -20 },
-      { x: cx - 60, y: -52 },
-      { x: cx + 60, y: -52 },
-      { x: cx - 120, y: -84 },
-      { x: cx + 120, y: -84 },
+      { x: cx,      y: ENEMY_ENTRY_Y },
+      { x: cx - 60, y: ENEMY_ENTRY_Y + 28 },
+      { x: cx + 60, y: ENEMY_ENTRY_Y + 28 },
+      { x: cx - 120, y: ENEMY_ENTRY_Y + 56 },
+      { x: cx + 120, y: ENEMY_ENTRY_Y + 56 },
     ];
     pts.forEach(({ x, y }, i) => spawnAt(scene, group, x, y, getFormationType(progressionLevel, i), mult, i * 60));
   },
@@ -63,14 +64,14 @@ const FORMATIONS: FormationFn[] = [
     for (let row = 0; row < 2; row++) {
       for (let col = 0; col < 4; col++) {
         const index = row * 4 + col;
-        spawnAt(scene, group, startX + col * 60, -20 - row * 48, getFormationType(progressionLevel, index), mult, index * 70);
+        spawnAt(scene, group, startX + col * 60, ENEMY_ENTRY_Y + row * 44, getFormationType(progressionLevel, index), mult, index * 70);
       }
     }
   },
   // Diagonal sweep: 6 enemies from left to right
   (scene, group, mult, progressionLevel) => {
     for (let i = 0; i < 6; i++) {
-      spawnAt(scene, group, 48 + i * 72, -20 - i * 36, getFormationType(progressionLevel, i), mult, i * 100);
+      spawnAt(scene, group, 48 + i * 72, ENEMY_ENTRY_Y + i * 18, getFormationType(progressionLevel, i), mult, i * 100);
     }
   },
 ];
@@ -106,6 +107,8 @@ export class EnemySpawnManager {
 
   setProgressionLevel(level: number): void {
     this.progressionLevel = Math.max(1, level);
+    this.cooldownMs = 400;
+    this.formationCooldownMs = FORMATION_INTERVAL_MS;
   }
 
   private spawnEnemy(): void {
@@ -116,7 +119,7 @@ export class EnemySpawnManager {
     const enemy = new Enemy(
       this.scene,
       randomBetween(36, GAME_WIDTH - 36),
-      -32,
+      ENEMY_ENTRY_Y,
       type,
       this.difficultyManager.getEnemySpeedMultiplier(),
     );

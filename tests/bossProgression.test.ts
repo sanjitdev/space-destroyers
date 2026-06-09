@@ -13,6 +13,7 @@ describe('BossProgression', () => {
     expect(requirements.small).toBe(FIRST_BOSS_SMALL_KILLS);
     expect(requirements.medium).toBe(FIRST_BOSS_MEDIUM_KILLS);
     expect(requirements.heavy).toBe(FIRST_BOSS_HEAVY_KILLS);
+    expect(requirements).toEqual({ small: 20, medium: 10, heavy: 5 });
   });
 
   it('scales gate requirements upward by level', () => {

@@ -6,14 +6,14 @@ export type EnemyKillProgress = Record<BossObjectiveEnemyType, number>;
 
 export const EMPTY_PROGRESS = (): EnemyKillProgress => ({ small: 0, medium: 0, heavy: 0 });
 
-export const FIRST_BOSS_SMALL_KILLS = 14;
-export const FIRST_BOSS_MEDIUM_KILLS = 4;
-export const FIRST_BOSS_HEAVY_KILLS = 0;
+export const FIRST_BOSS_SMALL_KILLS = 20;
+export const FIRST_BOSS_MEDIUM_KILLS = 10;
+export const FIRST_BOSS_HEAVY_KILLS = 5;
 
 export const getGateRequirements = (level: number): EnemyKillProgress => ({
-  small: level === 1 ? FIRST_BOSS_SMALL_KILLS : level <= 3 ? 6 + level * 2 : 10 + level * 2,
-  medium: level === 1 ? FIRST_BOSS_MEDIUM_KILLS : level <= 3 ? 1 + level : 3 + Math.floor(level * 1.4),
-  heavy: level === 1 ? FIRST_BOSS_HEAVY_KILLS : level <= 4 ? 1 : 1 + Math.floor((level - 1) / 3),
+  small: FIRST_BOSS_SMALL_KILLS + (level - 1) * 4,
+  medium: FIRST_BOSS_MEDIUM_KILLS + (level - 1) * 3,
+  heavy: FIRST_BOSS_HEAVY_KILLS + (level - 1),
 });
 
 export const isBossObjectiveEnemy = (type: EnemyType): type is BossObjectiveEnemyType =>

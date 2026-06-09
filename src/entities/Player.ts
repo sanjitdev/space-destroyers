@@ -11,6 +11,8 @@ import {
 } from '../utils/Constants';
 
 const MIN_Y = 188; // below taller HUD + boss objective area + margin
+const PLAYER_BODY_WIDTH_SCALE = 0.72;
+const PLAYER_BODY_HEIGHT_SCALE = 0.66;
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private lives = PLAYER_LIVES;
@@ -55,7 +57,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setTexture(ship.texture);
     this.setScale(this.baseScale);
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(this.displayWidth * 0.52, this.displayHeight * 0.48);
+    body.setSize(this.displayWidth * PLAYER_BODY_WIDTH_SCALE, this.displayHeight * PLAYER_BODY_HEIGHT_SCALE);
   }
 
   update(

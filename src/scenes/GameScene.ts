@@ -60,6 +60,7 @@ export class GameScene extends Phaser.Scene {
   private mode: GameMode = 'timed';
   private difficulty: DifficultyId = 'normal';
   private currentShipLevel = 1;
+  private levelElapsedMs = 0;
   private themeBulletTint = 0xffffff;
   private ribbonLaser: RibbonLaser | null = null;
 
@@ -74,6 +75,7 @@ export class GameScene extends Phaser.Scene {
     this.touchMoveX = null;
     this.touchMoveY = null;
     this.shootHeld = false;
+    this.levelElapsedMs = 0;
     this.mode = data?.mode ?? 'timed';
     this.difficulty = data?.difficulty ?? Storage.getDifficulty();
     const theme = THEMES[Storage.getTheme()];
@@ -93,7 +95,10 @@ export class GameScene extends Phaser.Scene {
     this.powerUps = this.physics.add.group({ classType: PowerUp, maxSize: 16, runChildUpdate: true });
     this.bossGroup = this.physics.add.group();
 
-    const ship = SHIP_CONFIGS[0];
+    const unlockedShipLevel = Storage.getMaxUnlockedShipLevel();
+    const selectedShipIndex = Math.min(Storage.getSelectedShipIndex(), unlockedShipLevel - 1);
+    const ship = SHIP_CONFIGS[selectedShipIndex];
+    this.currentShipLevel = selectedShipIndex + 1;
     this.player = new Player(this, GAME_WIDTH / 2, GAME_HEIGHT - 72, ship);
     this.scoreManager = new ScoreManager();
     this.timerManager = new TimerManager(undefined, this.mode === 'infinite');
@@ -120,6 +125,7 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard?.createCursorKeys();
     this.fireKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.usePowerUpKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.input.keyboard?.addCapture([Phaser.Input.Keyboard.KeyCodes.ESC]);
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.M).on('down', () => this.toggleMute());
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.F).on('down', () => {
       this.player.toggleAutoFire();
@@ -127,6 +133,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).on('down', () => this.togglePause());
     this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.P).on('down', () => this.togglePause());
+    this.input.keyboard?.on('keydown-ESC', () => this.togglePause());
 
     this.createTouchControls();
     this.createCollisions();
@@ -198,7 +205,9 @@ export class GameScene extends Phaser.Scene {
     this.timerManager.update(frameDelta);
     this.powerUpManager.update(frameDelta);
     this.comboManager.update(frameDelta);
-    this.difficultyManager.update(this.timerManager.getElapsedMs());
+    this.scoreManager.addSurvival(frameDelta);
+    this.levelElapsedMs += frameDelta;
+    this.difficultyManager.update(this.levelElapsedMs);
     this.enemySpawnManager.update(frameDelta);
 
     // Boss spawn check — kill-based
@@ -401,6 +410,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createTouchControls(): void {
+    const pauseButtonX = GAME_WIDTH - 38;
+    const pauseButtonY = 34;
+
+    const pauseButton = this.add.circle(pauseButtonX, pauseButtonY, 20, 0x04101e, 0.62)
+      .setStrokeStyle(2, 0x6cf3ff, 0.85)
+      .setScrollFactor(0)
+      .setDepth(19)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(pauseButtonX, pauseButtonY, 'II', {
+      color: '#d8f6ff',
+      fontFamily: 'Arial Black, sans-serif',
+      fontSize: '16px',
+      stroke: '#09101f',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(19);
+
+    pauseButton.on('pointerdown', () => this.togglePause());
+
     const fireButton = this.add.circle(GAME_WIDTH - 68, GAME_HEIGHT - 78, 46, 0xff5c8a, 0.28)
       .setStrokeStyle(3, 0xff96b0, 0.85)
       .setScrollFactor(0)
@@ -414,6 +441,11 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(19);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.isPauseArea(pointer.x, pointer.y)) {
+        this.togglePause();
+        return;
+      }
+
       if (this.isFireArea(pointer.x, pointer.y)) {
         this.firePointerId = pointer.id;
         this.shootHeld = true;
@@ -614,7 +646,7 @@ export class GameScene extends Phaser.Scene {
 
   private startLevelTransition(bossLevel: number): void {
     this.levelTransition = true;
-    const nextShipLevel = Math.min(SHIP_CONFIGS.length, bossLevel + 1);
+    Storage.unlockShipLevel(bossLevel + 1);
 
     // Each level starts fresh on the basic weapon.
     this.powerUpManager.clearActive();
@@ -675,7 +707,7 @@ export class GameScene extends Phaser.Scene {
               duration: 650,
               ease: 'Cubic.easeOut',
               onComplete: () => {
-                this.applyShipForLevel(nextShipLevel);
+                this.levelElapsedMs = 0;
                 body.enable = true;
                 banner.destroy();
                 this.enemySpawnManager.setProgressionLevel(bossLevel + 1);
@@ -1003,6 +1035,10 @@ export class GameScene extends Phaser.Scene {
     return Phaser.Math.Distance.Between(x, y, GAME_WIDTH - 68, GAME_HEIGHT - 78) <= 54;
   }
 
+  private isPauseArea(x: number, y: number): boolean {
+    return Phaser.Math.Distance.Between(x, y, GAME_WIDTH - 38, 34) <= 24;
+  }
+
   private showTutorialIfNeeded(): void {
     if (Storage.hasDoneTutorial()) return;
     Storage.markTutorialDone();
@@ -1072,6 +1108,9 @@ export class GameScene extends Phaser.Scene {
 
   private showPauseMenu(): void {
     this.paused = true;
+    this.physics.world.pause();
+    this.time.timeScale = 0;
+    this.tweens.pauseAll();
     const cx = GAME_WIDTH / 2;
     const cy = GAME_HEIGHT / 2;
     const FONT = 'Arial Black, sans-serif';
@@ -1119,6 +1158,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resumeFromPause(): void {
+    this.physics.world.resume();
+    this.time.timeScale = 1;
+    this.tweens.resumeAll();
     this.pauseOverlay?.destroy();
     this.pauseOverlay = undefined;
     this.paused = false;
@@ -1170,11 +1212,5 @@ export class GameScene extends Phaser.Scene {
       grade,
       summary,
     });
-  }
-
-  private applyShipForLevel(level: number): void {
-    const clampedLevel = Phaser.Math.Clamp(level, 1, SHIP_CONFIGS.length);
-    this.currentShipLevel = clampedLevel;
-    this.player.applyShipConfig(SHIP_CONFIGS[clampedLevel - 1]);
   }
 }
