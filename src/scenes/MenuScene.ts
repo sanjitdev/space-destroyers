@@ -251,7 +251,7 @@ export class MenuScene extends Phaser.Scene {
     };
     const divStyle = { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#1a3050' };
 
-    const settingsBtn = this.add.text(GAME_WIDTH / 2 - 148, iconBarY, '⚙️  Settings', iconBtnStyle)
+    const settingsBtn = this.add.text(GAME_WIDTH / 2 - 148, iconBarY, '⚙  Settings', iconBtnStyle)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     settingsBtn.on('pointerover', () => settingsBtn.setColor('#aaccdd'));
     settingsBtn.on('pointerout',  () => settingsBtn.setColor('#a8d3e8'));
@@ -267,7 +267,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.add.text(GAME_WIDTH / 2 + 68, iconBarY + 1, '|', divStyle).setOrigin(0.5);
 
-    const dailyBtn = this.add.text(GAME_WIDTH / 2 + 148, iconBarY, '📅  Daily', iconBtnStyle)
+    const dailyBtn = this.add.text(GAME_WIDTH / 2 + 148, iconBarY, '◆  Daily', iconBtnStyle)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     dailyBtn.on('pointerover', () => dailyBtn.setColor('#ffe050'));
     dailyBtn.on('pointerout',  () => dailyBtn.setColor('#a8d3e8'));
@@ -469,7 +469,7 @@ export class MenuScene extends Phaser.Scene {
     container.add(muteLbl);
 
     const refreshMuteToggle = (): void => {
-      muteLbl.setText(Storage.getMuted() ? '🔇  Off' : '🔊  On');
+      muteLbl.setText(Storage.getMuted() ? '■  Off' : '♪  On');
     };
     refreshMuteToggle();
     muteLbl.on('pointerdown', () => {
@@ -680,7 +680,7 @@ export class MenuScene extends Phaser.Scene {
     gfx.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 16);
     container.add(gfx);
 
-    container.add(this.add.text(W / 2, panelY + 26, '📅  DAILY CHALLENGES', {
+    container.add(this.add.text(W / 2, panelY + 26, '◆  DAILY CHALLENGES', {
       fontFamily: FONT, fontSize: '18px', color: '#ffe050',
       stroke: '#09101f', strokeThickness: 4,
       shadow: { offsetX: 0, offsetY: 0, color: '#ffcc00', blur: 14, fill: true },

@@ -14,8 +14,9 @@ export class HUD extends Phaser.GameObjects.Container {
   private readonly powerUpRow: Phaser.GameObjects.Text;
   private readonly objectivePanel: Phaser.GameObjects.Rectangle;
   private readonly objectiveStatusText: Phaser.GameObjects.Text;
-  private readonly objectiveIcons: Phaser.GameObjects.Image[];
-  private readonly objectiveCountTexts: Phaser.GameObjects.Text[];
+  private readonly bossTimerBarBg: Phaser.GameObjects.Rectangle;
+  private readonly bossTimerBarFill: Phaser.GameObjects.Rectangle;
+  private readonly bossTimerLabel: Phaser.GameObjects.Text;
   private readonly muteBtn: Phaser.GameObjects.Text;
   private readonly bossBarBg: Phaser.GameObjects.Rectangle;
   private readonly bossBarFill: Phaser.GameObjects.Rectangle;
@@ -91,7 +92,7 @@ export class HUD extends Phaser.GameObjects.Container {
     }).setOrigin(1, 0);
 
     // ── Mute icon ───────────────────────────────────────────────
-    this.muteBtn = scene.add.text(GAME_WIDTH / 2, 10, '🔊', {
+    this.muteBtn = scene.add.text(GAME_WIDTH / 2, 10, '♪', {
       fontFamily: FONT, fontSize: '20px',
     }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
     this.muteBtn.on('pointerdown', onToggleMute);
@@ -112,23 +113,22 @@ export class HUD extends Phaser.GameObjects.Container {
 
     this.objectivePanel = scene.add.rectangle(GAME_WIDTH / 2, 136, GAME_WIDTH - 52, 20, 0x061222, 0.92)
       .setStrokeStyle(1, 0x1a3060, 0.95);
-    this.objectiveStatusText = scene.add.text(92, 136, 'NEXT BOSS LV.1', {
+    this.objectiveStatusText = scene.add.text(22, 136, 'NEXT BOSS LV.1', {
       fontFamily: FONT, fontSize: '10px', color: '#dff4ff', letterSpacing: 1,
       stroke: '#000014', strokeThickness: 3,
     }).setOrigin(0, 0.5);
 
-    const objectiveStartX = GAME_WIDTH - 128;
-    const objectiveStepX = 40;
-    const objectiveIconKeys = ['enemy-small', 'enemy-medium', 'enemy-heavy'] as const;
-    this.objectiveIcons = objectiveIconKeys.map((key, index) =>
-      scene.add.image(objectiveStartX + index * objectiveStepX, 136, key).setScale(0.34).setOrigin(0.5),
-    );
-    this.objectiveCountTexts = objectiveIconKeys.map((_, index) =>
-      scene.add.text(objectiveStartX + 12 + index * objectiveStepX, 136, '0', {
-        fontFamily: FONT, fontSize: '10px', color: '#dff4ff',
-        stroke: '#000014', strokeThickness: 3,
-      }).setOrigin(0, 0.5),
-    );
+    // Timer bar — right side of objective panel
+    const barX = GAME_WIDTH / 2 + 10;
+    const barW = GAME_WIDTH / 2 - 42;
+    this.bossTimerBarBg = scene.add.rectangle(barX, 136, barW, 8, 0x0a1a2c, 1)
+      .setOrigin(0, 0.5).setStrokeStyle(1, 0x1a3060, 0.8);
+    this.bossTimerBarFill = scene.add.rectangle(barX, 136, 2, 8, 0x2a7fcc, 1)
+      .setOrigin(0, 0.5);
+    this.bossTimerLabel = scene.add.text(GAME_WIDTH - 28, 136, '', {
+      fontFamily: FONT, fontSize: '10px', color: '#dff4ff',
+      stroke: '#000014', strokeThickness: 3,
+    }).setOrigin(1, 0.5);
 
     // ── Stored power-up slots (3 slots below panel) ─────────────
     this.storedSlots = [];
@@ -164,7 +164,7 @@ export class HUD extends Phaser.GameObjects.Container {
       this.scoreValueText, this.highValueText,
       this.livesText, this.timeValueText,
       this.muteBtn, this.autoFireBadge, this.powerUpRow, this.objectivePanel, this.objectiveStatusText,
-      ...this.objectiveIcons, ...this.objectiveCountTexts,
+      this.bossTimerBarBg, this.bossTimerBarFill, this.bossTimerLabel,
       ...this.storedSlots, ...this.storedIcons,
       this.bossBarBg, this.bossBarFill, this.bossBarLabel,
     ]);
@@ -175,6 +175,24 @@ export class HUD extends Phaser.GameObjects.Container {
     this.scene.time.delayedCall(180, () => this.powerUpRow.setColor('#e8f7ff'));
   }
 
+  /** Lightweight per-frame update for the boss countdown (avoids full sync cost). */
+  syncObjective(statusText: string, timeFraction: number | null): void {
+    this.objectiveStatusText.setText(statusText);
+    const barW = GAME_WIDTH / 2 - 42;
+    const showBar = timeFraction !== null;
+    this.bossTimerBarBg.setVisible(showBar);
+    this.bossTimerBarFill.setVisible(showBar);
+    this.bossTimerLabel.setVisible(showBar);
+    if (showBar && timeFraction !== null) {
+      const filled = Math.max(2, barW * timeFraction);
+      const barColor =
+        timeFraction >= 0.9 ? 0xff3344 :
+        timeFraction >= 0.7 ? 0xff8833 :
+        0x2a9fdd;
+      this.bossTimerBarFill.setDisplaySize(filled, 8).setFillStyle(barColor);
+    }
+  }
+
   sync(
     score: number,
     highScore: number,
@@ -182,7 +200,7 @@ export class HUD extends Phaser.GameObjects.Container {
     timeRemaining: number,
     powerUps: string[],
     bossObjectiveStatusText: string,
-    bossObjectiveCounts: [number, number, number] | null,
+    bossTimeFraction: number | null,
     muted: boolean,
     stored: readonly PowerUpType[],
     autoFire: boolean,
@@ -195,14 +213,22 @@ export class HUD extends Phaser.GameObjects.Container {
     this.timeValueText.setText(timeRemaining < 0 ? '∞' : String(timeRemaining));
     this.powerUpRow.setText(powerUps.length > 0 ? `⚡  ${powerUps.join('   ·   ')}` : '');
     this.objectiveStatusText.setText(bossObjectiveStatusText);
-    this.objectiveIcons.forEach((icon, index) => {
-      const visible = bossObjectiveCounts !== null;
-      icon.setVisible(visible);
-      this.objectiveCountTexts[index]
-        .setVisible(visible)
-        .setText(visible ? String(bossObjectiveCounts[index]) : '');
-    });
-    this.muteBtn.setText(muted ? '🔇' : '🔊');
+
+    // Boss timer bar
+    const barW = GAME_WIDTH / 2 - 42;
+    const showBar = bossTimeFraction !== null;
+    this.bossTimerBarBg.setVisible(showBar);
+    this.bossTimerBarFill.setVisible(showBar);
+    this.bossTimerLabel.setVisible(showBar);
+    if (showBar && bossTimeFraction !== null) {
+      const filled = Math.max(2, barW * bossTimeFraction);
+      const barColor =
+        bossTimeFraction >= 0.9 ? 0xff3344 :
+        bossTimeFraction >= 0.7 ? 0xff8833 :
+        0x2a9fdd;
+      this.bossTimerBarFill.setDisplaySize(filled, 8).setFillStyle(barColor);
+    }
+    this.muteBtn.setText(muted ? '■' : '♪');
     this.autoFireBadge.setVisible(autoFire);
 
     // Update stored slots

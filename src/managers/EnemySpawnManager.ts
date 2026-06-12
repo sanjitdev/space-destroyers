@@ -2,16 +2,11 @@ import Phaser from 'phaser';
 import { Enemy } from '../entities/Enemy';
 import { GAME_WIDTH, type EnemyType } from '../utils/Constants';
 import { DifficultyManager } from './DifficultyManager';
-import { getGateRequirements } from './BossProgression';
+import { getBossSpawnTimeMs } from './BossProgression';
 import { pickWeighted, randomBetween } from '../utils/Random';
 
 const FORMATION_INTERVAL_MS = 12_000;
 const ENEMY_ENTRY_Y = 190;
-const MIN_LEVEL_DURATION_MS = 60_000;
-const MAX_LEVEL_DURATION_MS = 120_000;
-const LEVEL_DURATION_STEP_MS = 7_000;
-const KILL_EFFICIENCY = 0.78;
-const OBJECTIVE_TYPE_SPAWN_SHARE = 0.82;
 const MIN_SPAWN_INTERVAL_MS = 420;
 const MAX_SPAWN_INTERVAL_MS = 1_600;
 const START_RAMP_FACTOR = 1.25;
@@ -164,19 +159,12 @@ export class EnemySpawnManager {
   }
 
   private getAdaptiveSpawnIntervalMs(): number {
-    const requirements = getGateRequirements(this.progressionLevel);
-    const requiredKills = requirements.small + requirements.medium + requirements.heavy;
-    const targetDurationMs = Math.min(
-      MAX_LEVEL_DURATION_MS,
-      MIN_LEVEL_DURATION_MS + (this.progressionLevel - 1) * LEVEL_DURATION_STEP_MS,
-    );
-
-    const requiredSpawnCount = requiredKills / (KILL_EFFICIENCY * OBJECTIVE_TYPE_SPAWN_SHARE);
-    const baseIntervalMs = targetDurationMs / Math.max(1, requiredSpawnCount);
+    const targetDurationMs = getBossSpawnTimeMs(this.progressionLevel);
     const levelProgress = Phaser.Math.Clamp(this.levelElapsedMs / targetDurationMs, 0, 1);
     const rampFactor = Phaser.Math.Linear(START_RAMP_FACTOR, END_RAMP_FACTOR, levelProgress);
+    // ~55 spawns per stage; interval naturally compresses as level count rises
+    const baseIntervalMs = targetDurationMs / 55;
     const rampedIntervalMs = baseIntervalMs * rampFactor;
-
     return Phaser.Math.Clamp(rampedIntervalMs, MIN_SPAWN_INTERVAL_MS, MAX_SPAWN_INTERVAL_MS);
   }
 }

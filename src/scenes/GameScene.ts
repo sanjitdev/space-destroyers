@@ -230,8 +230,8 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Boss spawn check — kill-based
-    if (this.bossManager.checkSpawn()) {
+    // Boss spawn check — time-based
+    if (this.bossManager.checkSpawn(this.levelElapsedMs)) {
       const spawnedBoss = this.bossManager.getBoss();
       if (spawnedBoss) this.bossGroup.add(spawnedBoss);
       this.showBossWarning(
@@ -252,6 +252,8 @@ export class GameScene extends Phaser.Scene {
       this.hud.setBossHp(boss.getHpFraction(), boss.getName(), boss.getLevel());
     } else {
       this.hud.setBossHp(null);
+      // Update countdown text + bar every frame (cheap — just text + rect)
+      this.hud.syncObjective(this.getBossObjectiveStatusText(), this.getBossTimeFraction());
     }
 
     // E key — use stored power-up
@@ -584,7 +586,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private destroyEnemy(enemy: Enemy): void {
-    this.bossManager.onEnemyKilled(enemy.getEnemyType());
     this.comboManager.onKill();
     this.statsManager.recordKill();
     this.statsManager.recordCombo(this.comboManager.streak);
@@ -666,7 +667,6 @@ export class GameScene extends Phaser.Scene {
       const enemy = child as Enemy;
       if (!enemy.active) continue;
       killCount++;
-      this.bossManager.onEnemyKilled(enemy.getEnemyType());
       const pts = this.scoreManager.add(enemy.getPoints(), this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
       this.comboManager.onKill();
       this.statsManager.recordKill();
@@ -906,24 +906,14 @@ export class GameScene extends Phaser.Scene {
       return 'ALL BOSSES CLEARED';
     }
 
-    return `NEXT BOSS LV.${nextBossLevel}`;
+    const secsLeft = this.bossManager.getTimeRemainingSeconds(this.levelElapsedMs);
+    return `BOSS IN  ${secsLeft}s  —  LV.${nextBossLevel}`;
   }
 
-  private getBossObjectiveCounts(): [number, number, number] | null {
-    if (this.bossManager.getBoss()) {
-      return null;
-    }
-
-    const required = this.bossManager.getCurrentGateRequirements();
-    const progress = this.bossManager.getCurrentGateProgress();
-    if (!required || !progress) {
-      return null;
-    }
-
-    const remainingSmall = Math.max(0, required.small - progress.small);
-    const remainingMedium = Math.max(0, required.medium - progress.medium);
-    const remainingHeavy = Math.max(0, required.heavy - progress.heavy);
-    return [remainingSmall, remainingMedium, remainingHeavy];
+  private getBossTimeFraction(): number | null {
+    if (this.bossManager.getBoss()) return null;
+    if (this.bossManager.getNextBossLevel() === null) return null;
+    return this.bossManager.getBossTimeFraction(this.levelElapsedMs);
   }
 
   private getBossRewardPowerUp(level: number): PowerUpType {
@@ -1077,7 +1067,6 @@ export class GameScene extends Phaser.Scene {
           if (!enemy.active || hitEnemies.has(enemy)) continue;
           if (enemy.y >= beamTop && Math.abs(enemy.x - beamX) < beamWidth + 14) {
             hitEnemies.add(enemy);
-            this.bossManager.onEnemyKilled(enemy.getEnemyType());
             const awarded = this.scoreManager.add(
               enemy.getPoints(),
               this.powerUpManager.isActive('scoreMultiplier'),
@@ -1249,13 +1238,13 @@ export class GameScene extends Phaser.Scene {
     const score = this.scoreManager.getScore();
     this.dailyChallengeManager.onScoreReached(score);
     this.hud.sync(
-      this.scoreManager.getScore(),
+      score,
       this.scoreManager.getHighScore(),
       this.player.getLives(),
       this.timerManager.getRemainingSeconds(),
       this.powerUpManager.getDisplayItems(),
       this.getBossObjectiveStatusText(),
-      this.getBossObjectiveCounts(),
+      this.getBossTimeFraction(),
       this.audioManager.isMuted(),
       this.powerUpManager.getStored(),
       this.player.isAutoFireEnabled(),

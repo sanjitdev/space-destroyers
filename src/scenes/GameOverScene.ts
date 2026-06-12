@@ -95,9 +95,9 @@ export class GameOverScene extends Phaser.Scene {
     // ── Stats card ───────────────────────────────────────────────
     const s = data.summary;
     const statRows = [
-      [`⚔  ${s.enemiesKilled} enemies`, `💀  ${s.bossesKilled} bosses`],
-      [`🎯  ${s.accuracy}% accuracy`, `⚡  ×${s.peakCombo} combo`],
-      [`💥  ${s.shotsFired} shots`, `💔  ${s.livesLost} lives lost`],
+      [`\u2736  ${s.enemiesKilled} enemies`, `\u2605  ${s.bossesKilled} bosses`],
+      [`\u25ce  ${s.accuracy}% accuracy`, `\u00d7${s.peakCombo} combo`],
+      [`\u25b8  ${s.shotsFired} shots`, `\u2665  ${s.livesLost} lives lost`],
     ];
 
     const statPanel = this.add.rectangle(GAME_WIDTH / 2, 432, GAME_WIDTH - 40, 90, 0x030d1a, 0.85)
@@ -197,7 +197,7 @@ export class GameOverScene extends Phaser.Scene {
     fadeIn([btn2Gfx, btn2Label], 960, true);
 
     // Leaderboard link
-    const lbLink = this.add.text(GAME_WIDTH / 2, 706, '🏆  Best Runs', {
+    const lbLink = this.add.text(GAME_WIDTH / 2, 706, '★  Best Runs', {
       fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#7fa8c0',
       stroke: '#04101e', strokeThickness: 3, letterSpacing: 1,
     }).setOrigin(0.5).setAlpha(0).setInteractive({ useHandCursor: true });
@@ -230,7 +230,7 @@ export class GameOverScene extends Phaser.Scene {
     gfx.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 16);
     container.add(gfx);
 
-    container.add(this.add.text(W / 2, panelY + 26, '🏆  BEST RUNS', {
+    container.add(this.add.text(W / 2, panelY + 26, '\u2605  BEST RUNS', {
       fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#ffe050',
       stroke: '#09101f', strokeThickness: 4,
       shadow: { offsetX: 0, offsetY: 0, color: '#ffcc00', blur: 14, fill: true },
