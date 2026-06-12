@@ -11,15 +11,17 @@ import { AudioManager } from '../managers/AudioManager';
 import { AchievementManager } from '../managers/AchievementManager';
 import { BossManager } from '../managers/BossManager';
 import { ComboManager } from '../managers/ComboManager';
+import { DailyChallengeManager } from '../managers/DailyChallengeManager';
 import { DifficultyManager } from '../managers/DifficultyManager';
 import { EnemySpawnManager } from '../managers/EnemySpawnManager';
+import { PerkManager } from '../managers/PerkManager';
 import { PowerUpManager } from '../managers/PowerUpManager';
 import { ScoreManager } from '../managers/ScoreManager';
 import { StatsManager } from '../managers/StatsManager';
 import { TimerManager } from '../managers/TimerManager';
 import { FloatingText } from '../ui/FloatingText';
 import { HUD } from '../ui/HUD';
-import { GAME_HEIGHT, GAME_WIDTH, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type DifficultyId, type EnemyType, type GameMode, type PowerUpType } from '../utils/Constants';
+import { BULLET_SPEED, GAME_HEIGHT, GAME_WIDTH, POWER_UP_DROP_CHANCE, POWER_UP_LABELS, SHIP_CONFIGS, THEMES, type BossSpecialAbility, type DifficultyId, type EnemyType, type GameMode, type PowerUpType } from '../utils/Constants';
 import { Storage } from '../utils/Storage';
 
 export class GameScene extends Phaser.Scene {
@@ -40,6 +42,10 @@ export class GameScene extends Phaser.Scene {
   private bossManager!: BossManager;
   private statsManager!: StatsManager;
   private achievementManager!: AchievementManager;
+  private perkManager!: PerkManager;
+  private dailyChallengeManager!: DailyChallengeManager;
+  private pendingProgressionLevel = 1;
+  private shieldRegenMs = 0;
   private backgroundNebula!: Phaser.GameObjects.TileSprite;
   private background!: Phaser.GameObjects.TileSprite;
   private backgroundFar!: Phaser.GameObjects.TileSprite;
@@ -110,6 +116,9 @@ export class GameScene extends Phaser.Scene {
     this.bossManager = new BossManager(this);
     this.statsManager = new StatsManager();
     this.achievementManager = new AchievementManager(this);
+    this.perkManager = new PerkManager();
+    this.dailyChallengeManager = new DailyChallengeManager();
+    this.shieldRegenMs = 0;
     this.hud = new HUD(this, () => this.toggleMute());
 
     // Combo counter — anchored in the HUD header, above all other HUD elements
@@ -205,10 +214,21 @@ export class GameScene extends Phaser.Scene {
     this.timerManager.update(frameDelta);
     this.powerUpManager.update(frameDelta);
     this.comboManager.update(frameDelta);
-    this.scoreManager.addSurvival(frameDelta);
+    this.scoreManager.addSurvival(frameDelta, this.perkManager.getSurvivalBonus());
     this.levelElapsedMs += frameDelta;
     this.difficultyManager.update(this.levelElapsedMs);
     this.enemySpawnManager.update(frameDelta);
+
+    // Shield regen perk
+    if (this.perkManager.hasShieldRegen()) {
+      this.shieldRegenMs += frameDelta;
+      if (this.shieldRegenMs >= 20_000) {
+        this.shieldRegenMs = 0;
+        this.powerUpManager.activate('shield');
+        this.syncHud();
+        new FloatingText(this, this.player.x, this.player.y - 40, 'SHIELD REGEN', '#4dd2ff');
+      }
+    }
 
     // Boss spawn check — kill-based
     if (this.bossManager.checkSpawn()) {
@@ -244,10 +264,10 @@ export class GameScene extends Phaser.Scene {
 
     const horizontalInput = this.getHorizontalInput();
     const verticalInput = this.getVerticalInput();
-    this.player.update(frameDelta, horizontalInput, verticalInput, this.touchMoveX, this.touchMoveY);
+    this.player.update(frameDelta, horizontalInput, verticalInput, this.touchMoveX, this.touchMoveY, this.perkManager.getMovementSpeedMod());
     this.player.setPowerGlow(this.powerUpManager.getActiveTypes());
 
-    const slowFactor = this.powerUpManager.isActive('slowTime') ? 0.5 : 1;
+    const slowFactor = (this.powerUpManager.isActive('slowTime') ? 0.5 : 1) * this.perkManager.getEnemySlowMod();
     for (const child of this.enemies.getChildren()) {
       (child as Enemy).applyMovementFactor(slowFactor);
     }
@@ -296,13 +316,20 @@ export class GameScene extends Phaser.Scene {
     this.audioManager.destroy();
   }
 
+  /** Called by PerkDraftScene when the player picks a perk. */
+  onPerkChosen(perkId: string): void {
+    this.perkManager.addPerk(perkId);
+    this.enemySpawnManager.setProgressionLevel(this.pendingProgressionLevel);
+    this.levelTransition = false;
+  }
+
   private createCollisions(): void {
     this.physics.add.overlap(this.bullets, this.enemies, (bulletObject, enemyObject) => {
       const bullet = bulletObject as Bullet;
       const enemy = enemyObject as Enemy;
       if (!bullet.active || !enemy.active) return;
 
-      bullet.deactivate();
+      if (!bullet.isPiercing) bullet.deactivate();
       const destroyed = enemy.damage(1);
       if (destroyed) {
         this.destroyEnemy(enemy);
@@ -315,7 +342,7 @@ export class GameScene extends Phaser.Scene {
       const boss = bossObject as Boss;
       if (!bullet.active || !boss?.active) return;
 
-      bullet.deactivate();
+      if (!bullet.isPiercing) bullet.deactivate();
       const destroyed = boss.damage(1);
       if (destroyed) {
         this.destroyBoss(boss);
@@ -392,12 +419,17 @@ export class GameScene extends Phaser.Scene {
       }
       return;
     }
-    this.comboManager.onDamage();
+    if (!this.perkManager.comboPersistsOnDamage()) this.comboManager.onDamage();
     this.statsManager.recordDamage();
     this.audioManager.playDamage();
     this.cameras.main.shake(220, 0.012);
     this.cameras.main.flash(120, 255, 0, 0, false);
     new FloatingText(this, this.player.x, this.player.y - 28, '-1 Life', '#ff8ba7');
+    // Ghost mode: extra invulnerability on hit
+    if (this.perkManager.hasGhostMode()) {
+      this.player.applyBonusInvulnerability(2_000);
+      new FloatingText(this, this.player.x, this.player.y - 50, 'GHOST MODE!', '#c492ff');
+    }
     // Clear all active power-ups on taking a hit
     this.powerUpManager.clearActive();
     if (this.ribbonLaser) {
@@ -500,20 +532,36 @@ export class GameScene extends Phaser.Scene {
     const rapidFire = this.powerUpManager.isActive('rapidFire');
     const tripleShot = this.powerUpManager.isActive('tripleShot');
     const doubleShot = this.powerUpManager.isActive('doubleShot');
+    const bulletStorm = this.perkManager.hasBulletStorm();
+    const sideCannons = this.perkManager.hasSideCannons();
 
-    if (doubleShot) {
+    if (bulletStorm) {
+      // 5-bullet fan spread
+      this.spawnBullet(this.player.x, this.player.y - 24, 0);
+      this.spawnBullet(this.player.x - 8, this.player.y - 20, -140);
+      this.spawnBullet(this.player.x + 8, this.player.y - 20, 140);
+      this.spawnBullet(this.player.x - 14, this.player.y - 14, -280);
+      this.spawnBullet(this.player.x + 14, this.player.y - 14, 280);
+    } else if (doubleShot) {
       this.spawnBullet(this.player.x - 7, this.player.y - 24, 0);
       this.spawnBullet(this.player.x + 7, this.player.y - 24, 0);
     } else {
       this.spawnBullet(this.player.x, this.player.y - 24, 0);
     }
-    if (tripleShot) {
-      this.spawnBullet(this.player.x - 10, this.player.y - 18, -170);
-      this.spawnBullet(this.player.x + 10, this.player.y - 18, 170);
+
+    if (!bulletStorm) {
+      if (tripleShot) {
+        this.spawnBullet(this.player.x - 10, this.player.y - 18, -170);
+        this.spawnBullet(this.player.x + 10, this.player.y - 18, 170);
+      }
+      if (sideCannons) {
+        this.spawnBullet(this.player.x - 18, this.player.y - 10, -220);
+        this.spawnBullet(this.player.x + 18, this.player.y - 10, 220);
+      }
     }
 
     this.statsManager.recordShot();
-    this.player.consumeFireCooldown(rapidFire);
+    this.player.consumeFireCooldown(rapidFire, this.perkManager.getFireRateMod());
     this.audioManager.playShoot();
   }
 
@@ -526,6 +574,13 @@ export class GameScene extends Phaser.Scene {
 
     bullet.fire(x, y, velocityX);
     bullet.setTint(this.themeBulletTint);
+    bullet.isPiercing = this.powerUpManager.isActive('piercingShot') || this.perkManager.hasPiercingPerk();
+    // Apply bullet speed perk
+    const speedMod = this.perkManager.getBulletSpeedMod();
+    if (speedMod !== 1) {
+      const body = bullet.body as Phaser.Physics.Arcade.Body;
+      body.setVelocityY(BULLET_SPEED * speedMod);
+    }
   }
 
   private destroyEnemy(enemy: Enemy): void {
@@ -533,9 +588,11 @@ export class GameScene extends Phaser.Scene {
     this.comboManager.onKill();
     this.statsManager.recordKill();
     this.statsManager.recordCombo(this.comboManager.streak);
+    this.dailyChallengeManager.onEnemyKilled(enemy.getEnemyType());
+    this.dailyChallengeManager.onComboReached(this.comboManager.multiplier);
 
     const awarded = this.scoreManager.add(
-      enemy.getPoints(),
+      Math.round(enemy.getPoints() * this.perkManager.getScoreMod()),
       this.powerUpManager.isActive('scoreMultiplier'),
       this.comboManager.multiplier,
     );
@@ -552,7 +609,8 @@ export class GameScene extends Phaser.Scene {
 
     enemy.destroy();
 
-    if (this.powerUpManager.shouldDrop()) {
+    const effectiveDropChance = POWER_UP_DROP_CHANCE + this.perkManager.getDropChanceBonus();
+    if (Math.random() < effectiveDropChance) {
       this.spawnPowerUp(x, y);
     }
 
@@ -625,10 +683,15 @@ export class GameScene extends Phaser.Scene {
 
   private destroyBoss(boss: Boss): void {
     const bossLevel = boss.getLevel();
-    const awarded = this.scoreManager.add(500, this.powerUpManager.isActive('scoreMultiplier'), this.comboManager.multiplier);
+    const awarded = this.scoreManager.add(
+      Math.round(500 * this.perkManager.getScoreMod()),
+      this.powerUpManager.isActive('scoreMultiplier'),
+      this.comboManager.multiplier,
+    );
     this.comboManager.onKill();
     this.statsManager.recordBossKill();
     this.statsManager.recordKill();
+    this.dailyChallengeManager.onBossDefeated();
     this.createExplosion(boss.x, boss.y - 10, 0xff3366);
     this.createExplosion(boss.x - 20, boss.y + 10, 0xff8888);
     this.createExplosion(boss.x + 20, boss.y + 10, 0xffffff);
@@ -710,8 +773,16 @@ export class GameScene extends Phaser.Scene {
                 this.levelElapsedMs = 0;
                 body.enable = true;
                 banner.destroy();
-                this.enemySpawnManager.setProgressionLevel(bossLevel + 1);
-                this.levelTransition = false;
+                // Offer perk draft if choices are available
+                const choices = this.perkManager.getDraftChoices();
+                if (choices.length > 0) {
+                  this.pendingProgressionLevel = bossLevel + 1;
+                  this.scene.launch('PerkDraftScene', { choices, bossLevel });
+                  this.scene.pause();
+                } else {
+                  this.enemySpawnManager.setProgressionLevel(bossLevel + 1);
+                  this.levelTransition = false;
+                }
               },
             });
           });
@@ -785,10 +856,11 @@ export class GameScene extends Phaser.Scene {
 
     const level = boss.getLevel();
     const speedMul = this.difficultyManager.getEnemySpeedMultiplier();
+    const tier = boss.isPhase2() ? 2 : 1;
     switch (boss.getSpecialAbility()) {
       case 'drone_spawn':
-        this.spawnEnemyAt(boss.x - 60, boss.y + 20, this.getHenchmanTypeForLevel(level, 0), speedMul);
-        this.spawnEnemyAt(boss.x + 60, boss.y + 20, this.getHenchmanTypeForLevel(level, 1), speedMul);
+        this.spawnEnemyAt(boss.x - 60, boss.y + 20, this.getHenchmanTypeForLevel(level, 0), speedMul, tier);
+        this.spawnEnemyAt(boss.x + 60, boss.y + 20, this.getHenchmanTypeForLevel(level, 1), speedMul, tier);
         break;
       case 'meteor_shower':
         for (let i = 0; i < 5; i++) {
@@ -798,19 +870,21 @@ export class GameScene extends Phaser.Scene {
               boss.y - 20,
               this.getHenchmanTypeForLevel(level, i),
               speedMul,
+              tier,
             );
           });
         }
         break;
       case 'summon':
-        this.spawnEnemyAt(boss.x - 90, boss.y + 60, this.getHenchmanTypeForLevel(level, 0), speedMul);
-        this.spawnEnemyAt(boss.x + 90, boss.y + 60, this.getHenchmanTypeForLevel(level, 1), speedMul);
+        this.spawnEnemyAt(boss.x - 90, boss.y + 60, this.getHenchmanTypeForLevel(level, 0), speedMul, tier);
+        this.spawnEnemyAt(boss.x + 90, boss.y + 60, this.getHenchmanTypeForLevel(level, 1), speedMul, tier);
         break;
     }
   }
 
-  private spawnEnemyAt(x: number, y: number, type: EnemyType, speedMul: number): void {
+  private spawnEnemyAt(x: number, y: number, type: EnemyType, speedMul: number, henchmanTier = 1): void {
     const enemy = new Enemy(this, x, y, type, speedMul);
+    if (henchmanTier > 1) enemy.applyHenchmanTier(henchmanTier);
     this.enemies.add(enemy);
   }
 
@@ -1172,6 +1246,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private syncHud(): void {
+    const score = this.scoreManager.getScore();
+    this.dailyChallengeManager.onScoreReached(score);
     this.hud.sync(
       this.scoreManager.getScore(),
       this.scoreManager.getHighScore(),
@@ -1198,10 +1274,21 @@ export class GameScene extends Phaser.Scene {
     const summary = this.statsManager.getSummary();
     const grade = this.statsManager.computeGrade(this.scoreManager.getScore());
 
+    // No-damage challenge
+    if (summary.livesLost === 0) this.dailyChallengeManager.onNoDamageRun();
+
     Storage.incrementGamesPlayed();
     Storage.addKills(summary.enemiesKilled);
     Storage.addBossKills(summary.bossesKilled);
     Storage.updateShipBest(this.currentShipLevel - 1, this.scoreManager.getScore());
+    Storage.addRunRecord({
+      date: new Date().toLocaleDateString(),
+      score: this.scoreManager.getScore(),
+      grade,
+      shipIndex: this.currentShipLevel - 1,
+      mode: this.mode,
+      durationMs: this.timerManager.getElapsedMs(),
+    });
     this.achievementManager.check();
 
     this.scene.start('GameOverScene', {

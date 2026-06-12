@@ -2,12 +2,13 @@ import type PhaserType from 'phaser';
 import './style.css';
 import { GAME_HEIGHT, GAME_WIDTH } from './utils/Constants';
 
-const [{ default: Phaser }, { BootScene }, { MenuScene }, { GameScene }, { GameOverScene }] = await Promise.all([
+const [{ default: Phaser }, { BootScene }, { MenuScene }, { GameScene }, { GameOverScene }, { PerkDraftScene }] = await Promise.all([
   import('phaser'),
   import('./scenes/BootScene'),
   import('./scenes/MenuScene'),
   import('./scenes/GameScene'),
   import('./scenes/GameOverScene'),
+  import('./scenes/PerkDraftScene'),
 ]);
 
 const game = new Phaser.Game({
@@ -26,7 +27,7 @@ const game = new Phaser.Game({
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, GameScene, GameOverScene],
+  scene: [BootScene, MenuScene, GameScene, GameOverScene, PerkDraftScene],
 });
 
 if (import.meta.env.DEV) {

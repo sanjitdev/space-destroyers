@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { BULLET_SPEED, GAME_HEIGHT, GAME_WIDTH } from '../utils/Constants';
 
 export class Bullet extends Phaser.Physics.Arcade.Image {
+  isPiercing = false;
+
   constructor(scene: Phaser.Scene, x = 0, y = 0) {
     super(scene, x, y, 'bullet');
     scene.add.existing(this);

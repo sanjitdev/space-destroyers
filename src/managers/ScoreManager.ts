@@ -13,13 +13,13 @@ export class ScoreManager {
     return this.highScore;
   }
 
-  addSurvival(deltaMs: number): number {
+  addSurvival(deltaMs: number, bonusPtsSec = 0): number {
     this.passiveScoreRemainderMs += deltaMs;
     const survivalPoints = Math.floor(this.passiveScoreRemainderMs / 1_000);
     if (survivalPoints <= 0) return 0;
 
     this.passiveScoreRemainderMs -= survivalPoints * 1_000;
-    this.score += survivalPoints;
+    this.score += survivalPoints + bonusPtsSec;
     this.updateHighScore();
     return survivalPoints;
   }

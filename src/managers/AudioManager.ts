@@ -9,6 +9,8 @@ export class AudioManager {
   private unlocked = false;
   private musicTimerMs = 0;
   private musicIndex = 0;
+  private musicVolume = Storage.getMusicVolume();
+  private sfxVolume = Storage.getSfxVolume();
   private readonly scene: Phaser.Scene;
 
   constructor(scene: Phaser.Scene) {
@@ -30,7 +32,20 @@ export class AudioManager {
     this.musicTimerMs = 240;
     const frequency = musicPattern[this.musicIndex];
     this.musicIndex = (this.musicIndex + 1) % musicPattern.length;
-    this.playTone(frequency, 0.16, 'triangle', 0.03);
+    this.playTone(frequency, 0.16, 'triangle', 0.03 * this.musicVolume);
+  }
+
+  getMusicVolume(): number { return this.musicVolume; }
+  getSfxVolume(): number   { return this.sfxVolume; }
+
+  setMusicVolume(v: number): void {
+    this.musicVolume = Math.max(0, Math.min(1, v));
+    Storage.setMusicVolume(this.musicVolume);
+  }
+
+  setSfxVolume(v: number): void {
+    this.sfxVolume = Math.max(0, Math.min(1, v));
+    Storage.setSfxVolume(this.sfxVolume);
   }
 
   isMuted(): boolean {
@@ -44,27 +59,27 @@ export class AudioManager {
   }
 
   playShoot(): void {
-    this.playTone(660, 0.06, 'square', 0.04, 920);
+    this.playTone(660, 0.06, 'square', 0.04 * this.sfxVolume, 920);
   }
 
   playExplosion(): void {
-    this.playTone(140, 0.18, 'sawtooth', 0.05, 70);
+    this.playTone(140, 0.18, 'sawtooth', 0.05 * this.sfxVolume, 70);
     this.vibrate(30);
   }
 
   playPowerUp(): void {
-    this.playTone(520, 0.12, 'triangle', 0.05, 820);
+    this.playTone(520, 0.12, 'triangle', 0.05 * this.sfxVolume, 820);
     this.vibrate(15);
   }
 
   playDamage(): void {
-    this.playTone(180, 0.14, 'square', 0.05, 110);
+    this.playTone(180, 0.14, 'square', 0.05 * this.sfxVolume, 110);
     this.vibrate([50, 30, 80]);
   }
 
   playLaser(): void {
-    this.playTone(180, 0.65, 'sawtooth', 0.22, 1800);
-    this.playTone(360, 0.50, 'square', 0.09, 2200);
+    this.playTone(180, 0.65, 'sawtooth', 0.22 * this.sfxVolume, 1800);
+    this.playTone(360, 0.50, 'square', 0.09 * this.sfxVolume, 2200);
     this.vibrate(200);
   }
 

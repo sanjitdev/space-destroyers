@@ -1,4 +1,4 @@
-import { DIFFICULTY_IDS, SHIP_CONFIGS, THEME_IDS, type DifficultyId, type ThemeId } from './Constants';
+import { DIFFICULTY_IDS, SHIP_CONFIGS, THEME_IDS, type DifficultyId, type RunRecord, type ThemeId } from './Constants';
 
 const HIGH_SCORE_KEY = 'space-destroyers-high-score';
 const MUTED_KEY = 'space-destroyers-muted';
@@ -11,6 +11,10 @@ const TOTAL_KILLS_KEY = 'space-destroyers-total-kills';
 const TOTAL_BOSSES_KEY = 'space-destroyers-total-bosses';
 const SHIP_BEST_KEY = (idx: number) => `space-destroyers-ship-best-${idx}`;
 const TUTORIAL_KEY = 'space-destroyers-tutorial-done';
+const RUN_HISTORY_KEY = 'space-destroyers-run-history';
+const DAILY_CHALLENGE_KEY = 'space-destroyers-daily-challenge';
+const MUSIC_VOLUME_KEY = 'space-destroyers-music-volume';
+const SFX_VOLUME_KEY = 'space-destroyers-sfx-volume';
 
 const withStorage = <T>(fallback: T, action: () => T): T => {
   try {
@@ -142,6 +146,60 @@ export const Storage = {
   markTutorialDone(): void {
     withStorage(undefined, () => {
       window.localStorage.setItem(TUTORIAL_KEY, 'true');
+      return undefined;
+    });
+  },
+
+  getRunHistory(): RunRecord[] {
+    return withStorage([], () => {
+      const raw = window.localStorage.getItem(RUN_HISTORY_KEY);
+      return raw ? (JSON.parse(raw) as RunRecord[]) : [];
+    });
+  },
+  addRunRecord(record: RunRecord): void {
+    withStorage(undefined, () => {
+      const history = this.getRunHistory();
+      history.unshift(record);
+      window.localStorage.setItem(RUN_HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
+      return undefined;
+    });
+  },
+
+  getDailyChallenge(): { date: string; progress: number[]; completed: boolean[] } | null {
+    return withStorage(null, () => {
+      const raw = window.localStorage.getItem(DAILY_CHALLENGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    });
+  },
+  setDailyChallenge(data: { date: string; progress: number[]; completed: boolean[] }): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(DAILY_CHALLENGE_KEY, JSON.stringify(data));
+      return undefined;
+    });
+  },
+
+  getMusicVolume(): number {
+    return withStorage(0.7, () => {
+      const v = parseFloat(window.localStorage.getItem(MUSIC_VOLUME_KEY) ?? '0.7');
+      return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.7;
+    });
+  },
+  setMusicVolume(volume: number): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(MUSIC_VOLUME_KEY, String(Math.max(0, Math.min(1, volume))));
+      return undefined;
+    });
+  },
+
+  getSfxVolume(): number {
+    return withStorage(0.8, () => {
+      const v = parseFloat(window.localStorage.getItem(SFX_VOLUME_KEY) ?? '0.8');
+      return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.8;
+    });
+  },
+  setSfxVolume(volume: number): void {
+    withStorage(undefined, () => {
+      window.localStorage.setItem(SFX_VOLUME_KEY, String(Math.max(0, Math.min(1, volume))));
       return undefined;
     });
   },

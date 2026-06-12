@@ -11,6 +11,7 @@ import {
   type DifficultyId,
   type GameMode,
 } from '../utils/Constants';
+import { DailyChallengeManager } from '../managers/DailyChallengeManager';
 import { Storage } from '../utils/Storage';
 
 const FONT = 'Arial Black, sans-serif';
@@ -238,7 +239,7 @@ export class MenuScene extends Phaser.Scene {
         });
     });
 
-    // ── Bottom icon bar: Settings · Power-ups ────────────────────
+    // ── Bottom icon bar: Settings · Power-ups · Daily ──────────
     const iconBarY = 624;
     const iconBtnStyle = {
       fontFamily: 'Arial, sans-serif',
@@ -248,20 +249,29 @@ export class MenuScene extends Phaser.Scene {
       stroke: '#04101e',
       strokeThickness: 3,
     };
+    const divStyle = { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#1a3050' };
 
-    const settingsBtn = this.add.text(GAME_WIDTH / 2 - 80, iconBarY, '⚙️  Settings', iconBtnStyle)
+    const settingsBtn = this.add.text(GAME_WIDTH / 2 - 148, iconBarY, '⚙️  Settings', iconBtnStyle)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     settingsBtn.on('pointerover', () => settingsBtn.setColor('#aaccdd'));
     settingsBtn.on('pointerout',  () => settingsBtn.setColor('#a8d3e8'));
     settingsBtn.on('pointerdown', () => this.showSettingsOverlay(bg));
 
-    this.add.text(GAME_WIDTH / 2, iconBarY + 1, '|', { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#1a3050' }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2 - 68, iconBarY + 1, '|', divStyle).setOrigin(0.5);
 
-    const infoBtn = this.add.text(GAME_WIDTH / 2 + 80, iconBarY, 'ⓘ  Power-Ups', iconBtnStyle)
+    const infoBtn = this.add.text(GAME_WIDTH / 2, iconBarY, 'ⓘ  Power-Ups', iconBtnStyle)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     infoBtn.on('pointerover', () => infoBtn.setColor('#6cf3ff'));
     infoBtn.on('pointerout',  () => infoBtn.setColor('#a8d3e8'));
     infoBtn.on('pointerdown', () => this.showPowerUpOverlay());
+
+    this.add.text(GAME_WIDTH / 2 + 68, iconBarY + 1, '|', divStyle).setOrigin(0.5);
+
+    const dailyBtn = this.add.text(GAME_WIDTH / 2 + 148, iconBarY, '📅  Daily', iconBtnStyle)
+      .setOrigin(0.5).setInteractive({ useHandCursor: true });
+    dailyBtn.on('pointerover', () => dailyBtn.setColor('#ffe050'));
+    dailyBtn.on('pointerout',  () => dailyBtn.setColor('#a8d3e8'));
+    dailyBtn.on('pointerdown', () => this.showDailyChallengesOverlay());
 
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 28, '← → to move  ·  SPACE or FIRE button to shoot', {
       fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#b0d8ee',
@@ -274,7 +284,7 @@ export class MenuScene extends Phaser.Scene {
   private showSettingsOverlay(bgSprite: Phaser.GameObjects.TileSprite): void {
     const W = GAME_WIDTH;
     const panelW = 420;
-    const panelH = 380;
+    const panelH = 460;
     const panelX = (W - panelW) / 2;
     const panelY = (GAME_HEIGHT - panelH) / 2;
 
@@ -467,6 +477,58 @@ export class MenuScene extends Phaser.Scene {
       refreshMuteToggle();
     });
 
+    // ── Volume controls ────────────────────────────────────────
+    const makeVolumeRow = (labelText: string, rowY: number, getVol: () => number, setVol: (v: number) => void): void => {
+      container.add(this.add.text(panelX + 22, rowY, labelText, {
+        fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#7fa8c0', letterSpacing: 2,
+        stroke: '#04101e', strokeThickness: 2,
+      }));
+
+      const volLbl = this.add.text(panelX + panelW - 22, rowY, `${Math.round(getVol() * 100)}%`, {
+        fontFamily: FONT, fontSize: '12px', color: '#6cf3ff',
+      }).setOrigin(1, 0);
+      container.add(volLbl);
+
+      const barW = panelW - 120;
+      const barX = panelX + 58;
+      const barY = rowY + 18;
+
+      const barBg = this.add.graphics();
+      barBg.fillStyle(0x0a1a2c, 1);
+      barBg.fillRoundedRect(barX, barY, barW, 6, 3);
+      container.add(barBg);
+
+      const barFill = this.add.graphics();
+      const redrawBar = (): void => {
+        barFill.clear();
+        barFill.fillStyle(0x2a7fcc, 1);
+        barFill.fillRoundedRect(barX, barY, barW * getVol(), 6, 3);
+      };
+      redrawBar();
+      container.add(barFill);
+
+      // Draggable hit area
+      const hitBar = this.add.rectangle(barX + barW / 2, barY + 3, barW, 20, 0, 0)
+        .setInteractive({ useHandCursor: true });
+      container.add(hitBar);
+      hitBar.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
+        const fraction = Phaser.Math.Clamp((ptr.x - barX) / barW, 0, 1);
+        const snapped = Math.round(fraction * 10) / 10;
+        setVol(snapped);
+        volLbl.setText(`${Math.round(snapped * 100)}%`);
+        redrawBar();
+      });
+    };
+
+    const volumeLineY = muteLineY + 48;
+    container.add(this.add.rectangle(W / 2, volumeLineY - 4, panelW - 36, 1, 0x1a3060, 0.5));
+    container.add(this.add.text(panelX + 22, volumeLineY + 6, 'VOLUME', {
+      fontFamily: FONT, fontSize: '10px', color: '#9ac8e8', letterSpacing: 3,
+      stroke: '#04101e', strokeThickness: 3,
+    }));
+    makeVolumeRow('Music', volumeLineY + 28, () => Storage.getMusicVolume(), v => Storage.setMusicVolume(v));
+    makeVolumeRow('SFX',   volumeLineY + 62, () => Storage.getSfxVolume(),   v => Storage.setSfxVolume(v));
+
     this.tweens.add({ targets: container, alpha: 1, duration: 160 });
 
     const close = (): void => {
@@ -590,6 +652,118 @@ export class MenuScene extends Phaser.Scene {
       });
     };
 
+    backdrop.on('pointerdown', close);
+    const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    escKey?.once('down', close);
+  }
+
+  private showDailyChallengesOverlay(): void {
+    const W = GAME_WIDTH;
+    const manager = new DailyChallengeManager();
+    const challenges = manager.getChallenges();
+
+    const panelW = 400;
+    const panelH = 340;
+    const panelX = (W - panelW) / 2;
+    const panelY = (GAME_HEIGHT - panelH) / 2;
+
+    const container = this.add.container(0, 0).setDepth(60).setAlpha(0);
+    const backdrop = this.add.rectangle(W / 2, GAME_HEIGHT / 2, W, GAME_HEIGHT, 0x000000, 0.78).setInteractive();
+    container.add(backdrop);
+
+    const gfx = this.add.graphics();
+    gfx.fillStyle(0x030c1c, 0.97);
+    gfx.fillRoundedRect(panelX, panelY, panelW, panelH, 18);
+    gfx.lineStyle(1.5, 0x1a3060, 1);
+    gfx.strokeRoundedRect(panelX, panelY, panelW, panelH, 18);
+    gfx.lineStyle(1, 0xffe050, 0.18);
+    gfx.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 16);
+    container.add(gfx);
+
+    container.add(this.add.text(W / 2, panelY + 26, '📅  DAILY CHALLENGES', {
+      fontFamily: FONT, fontSize: '18px', color: '#ffe050',
+      stroke: '#09101f', strokeThickness: 4,
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffcc00', blur: 14, fill: true },
+    }).setOrigin(0.5));
+
+    container.add(this.add.text(W / 2, panelY + 50, 'Complete all 3 for a score bonus', {
+      fontFamily: 'Arial, sans-serif', fontSize: '11px', color: '#9ac8e8', letterSpacing: 1,
+    }).setOrigin(0.5));
+
+    container.add(this.add.rectangle(W / 2, panelY + 64, panelW - 36, 1, 0x1a3060, 0.8));
+
+    const completedCount = challenges.filter(c => c.completed).length;
+    const bonusMult = manager.getScoreMultiplierBonus();
+
+    challenges.forEach((state, i) => {
+      const rowY = panelY + 82 + i * 70;
+      const isComplete = state.completed;
+      const progress = Math.min(state.progress, state.def.target);
+      const fraction = state.def.target > 0 ? progress / state.def.target : 0;
+
+      // Row background
+      const rowGfx = this.add.graphics();
+      rowGfx.fillStyle(isComplete ? 0x0a2210 : 0x050d1a, 0.9);
+      rowGfx.fillRoundedRect(panelX + 16, rowY, panelW - 32, 58, 8);
+      rowGfx.lineStyle(1.5, isComplete ? 0x44ff88 : 0x1a3a60, 0.8);
+      rowGfx.strokeRoundedRect(panelX + 16, rowY, panelW - 32, 58, 8);
+      container.add(rowGfx);
+
+      // Checkmark or number
+      container.add(this.add.text(panelX + 30, rowY + 28, isComplete ? '✓' : `${i + 1}`, {
+        fontFamily: FONT, fontSize: isComplete ? '20px' : '14px',
+        color: isComplete ? '#44ff88' : '#4a7a9a',
+        stroke: '#04101e', strokeThickness: 3,
+      }).setOrigin(0.5));
+
+      // Challenge label
+      container.add(this.add.text(panelX + 50, rowY + 12, state.def.label, {
+        fontFamily: FONT, fontSize: '13px',
+        color: isComplete ? '#b0ffcc' : '#d8f0ff',
+        stroke: '#04101e', strokeThickness: 3,
+      }));
+
+      // Progress text
+      const progressLabel = state.def.type === 'no_damage'
+        ? (isComplete ? 'No damage taken!' : 'Avoid all damage')
+        : `${progress} / ${state.def.target}`;
+      container.add(this.add.text(panelX + 50, rowY + 32, progressLabel, {
+        fontFamily: 'Arial, sans-serif', fontSize: '11px',
+        color: isComplete ? '#88ffaa' : '#7fa8c0',
+        stroke: '#04101e', strokeThickness: 2,
+      }));
+
+      // Progress bar
+      const barW = panelW - 112;
+      const barX = panelX + 50;
+      const barY = rowY + 46;
+      const barGfx = this.add.graphics();
+      barGfx.fillStyle(0x0a1a2c, 1);
+      barGfx.fillRoundedRect(barX, barY, barW, 5, 2);
+      barGfx.fillStyle(isComplete ? 0x44ff88 : 0x2a6fcc, 1);
+      barGfx.fillRoundedRect(barX, barY, barW * fraction, 5, 2);
+      container.add(barGfx);
+    });
+
+    // Bonus line
+    const bonusY = panelY + panelH - 54;
+    container.add(this.add.rectangle(W / 2, bonusY, panelW - 36, 1, 0x1a3060, 0.5));
+    container.add(this.add.text(W / 2, bonusY + 14, `${completedCount}/3 completed  ·  Score bonus  ×${bonusMult.toFixed(2)}`, {
+      fontFamily: 'Arial, sans-serif', fontSize: '12px',
+      color: completedCount === 3 ? '#ffe050' : '#7fa8c0',
+      stroke: '#04101e', strokeThickness: 2,
+    }).setOrigin(0.5));
+
+    container.add(this.add.text(W / 2, bonusY + 32, 'Challenges reset daily at midnight', {
+      fontFamily: 'Arial, sans-serif', fontSize: '10px', color: '#4a6a8a', letterSpacing: 1,
+    }).setOrigin(0.5));
+
+    this.tweens.add({ targets: container, alpha: 1, duration: 160 });
+
+    const close = (): void => {
+      escKey?.off('down', close);
+      this.tweens.add({ targets: container, alpha: 0, duration: 120, onComplete: () => container.destroy() });
+    };
     backdrop.on('pointerdown', close);
     const escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     escKey?.once('down', close);

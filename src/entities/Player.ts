@@ -84,24 +84,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     verticalInput: number,
     touchTargetX: number | null,
     touchTargetY: number | null,
+    speedMod = 1,
   ): void {
     this.fireCooldownMs = Math.max(0, this.fireCooldownMs - deltaMs);
     this.invulnerabilityMs = Math.max(0, this.invulnerabilityMs - deltaMs);
 
+    const effectiveSpeed = this.shipSpeed * speedMod;
+
     // Horizontal
     if (touchTargetX !== null) {
-      const desiredVelocity = Phaser.Math.Clamp((touchTargetX - this.x) * 7, -this.shipSpeed, this.shipSpeed);
+      const desiredVelocity = Phaser.Math.Clamp((touchTargetX - this.x) * 7, -effectiveSpeed, effectiveSpeed);
       this.setVelocityX(desiredVelocity);
     } else {
-      this.setVelocityX(horizontalInput * this.shipSpeed);
+      this.setVelocityX(horizontalInput * effectiveSpeed);
     }
 
     // Vertical (75% of horizontal speed so the game stays readable)
     if (touchTargetY !== null) {
-      const dvy = Phaser.Math.Clamp((touchTargetY - this.y) * 7, -this.shipSpeed * 0.75, this.shipSpeed * 0.75);
+      const dvy = Phaser.Math.Clamp((touchTargetY - this.y) * 7, -effectiveSpeed * 0.75, effectiveSpeed * 0.75);
       this.setVelocityY(dvy);
     } else {
-      this.setVelocityY(verticalInput * this.shipSpeed * 0.75);
+      this.setVelocityY(verticalInput * effectiveSpeed * 0.75);
     }
 
     // Prevent player from going into HUD area
@@ -124,9 +127,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.fireCooldownMs <= 0;
   }
 
-  consumeFireCooldown(rapidFire: boolean): void {
-    const base = PLAYER_FIRE_COOLDOWN_MS * this.shipCooldownMod;
+  consumeFireCooldown(rapidFire: boolean, perkMod = 1): void {
+    const base = PLAYER_FIRE_COOLDOWN_MS * this.shipCooldownMod * perkMod;
     this.fireCooldownMs = rapidFire ? base / 2 : base;
+  }
+
+  applyBonusInvulnerability(ms: number): void {
+    this.invulnerabilityMs = Math.max(this.invulnerabilityMs, ms);
   }
 
   takeDamage(shielded: boolean): boolean {

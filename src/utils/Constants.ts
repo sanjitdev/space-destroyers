@@ -161,16 +161,16 @@ const SHIP_GAME_SCALE = 0.28;
 const SHIP_PREVIEW_SCALE = 0.23;
 
 export const SHIP_CONFIGS: ShipConfig[] = [
-  { id: 'ship-1',  label: 'Ship I',   texture: 'spaceship_1',  unlockScore: 0,    speedMod: 1.00, cooldownMod: 1.00, description: 'Level 1 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-2',  label: 'Ship II',  texture: 'spaceship_2',  unlockScore: 400,  speedMod: 1.00, cooldownMod: 1.00, description: 'Level 2 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-3',  label: 'Ship III', texture: 'spaceship_3',  unlockScore: 900,  speedMod: 1.00, cooldownMod: 1.00, description: 'Level 3 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-4',  label: 'Ship IV',  texture: 'spaceship_4',  unlockScore: 1500, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 4 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-5',  label: 'Ship V',   texture: 'spaceship_5',  unlockScore: 2200, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 5 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-6',  label: 'Ship VI',  texture: 'spaceship_6',  unlockScore: 3000, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 6 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-7',  label: 'Ship VII', texture: 'spaceship_7',  unlockScore: 3900, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 7 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-8',  label: 'Ship VIII',texture: 'spaceship_8',  unlockScore: 4900, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 8 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-9',  label: 'Ship IX',  texture: 'spaceship_9',  unlockScore: 6000, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 9 hull',  gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
-  { id: 'ship-10', label: 'Ship X',   texture: 'spaceship_10', unlockScore: 7500, speedMod: 1.00, cooldownMod: 1.00, description: 'Level 10 hull', gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-1',  label: 'Ship I',    texture: 'spaceship_1',  unlockScore: 0,    speedMod: 1.00, cooldownMod: 1.00, description: 'Balanced starter',       gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-2',  label: 'Ship II',   texture: 'spaceship_2',  unlockScore: 400,  speedMod: 1.08, cooldownMod: 1.00, description: 'Faster movement',         gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-3',  label: 'Ship III',  texture: 'spaceship_3',  unlockScore: 900,  speedMod: 1.00, cooldownMod: 0.88, description: 'Quicker fire rate',        gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-4',  label: 'Ship IV',   texture: 'spaceship_4',  unlockScore: 1500, speedMod: 1.12, cooldownMod: 1.00, description: 'High agility',            gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-5',  label: 'Ship V',    texture: 'spaceship_5',  unlockScore: 2200, speedMod: 0.90, cooldownMod: 0.72, description: 'Rapid fire · slower hull', gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-6',  label: 'Ship VI',   texture: 'spaceship_6',  unlockScore: 3000, speedMod: 1.18, cooldownMod: 1.00, description: 'Speed specialist',        gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-7',  label: 'Ship VII',  texture: 'spaceship_7',  unlockScore: 3900, speedMod: 1.05, cooldownMod: 0.78, description: 'Agile · fast fire',       gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-8',  label: 'Ship VIII', texture: 'spaceship_8',  unlockScore: 4900, speedMod: 1.22, cooldownMod: 1.00, description: 'Maximum speed',           gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-9',  label: 'Ship IX',   texture: 'spaceship_9',  unlockScore: 6000, speedMod: 0.85, cooldownMod: 0.58, description: 'Heavy · ultra rapid fire', gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
+  { id: 'ship-10', label: 'Ship X',    texture: 'spaceship_10', unlockScore: 7500, speedMod: 1.15, cooldownMod: 0.72, description: 'Elite · speed + fire',    gameScale: SHIP_GAME_SCALE, previewScale: SHIP_PREVIEW_SCALE },
 ];
 
 export const getPlayerLevel = (highScore: number): number =>
@@ -219,3 +219,84 @@ export const BOSS_LEVEL_CONFIGS: readonly BossLevelConfig[] = [
   { level: 9,  name: 'Apocalypse', texture: 'boss-9',  maxHp: 390, phase2Hp: 195, lateralSpeed: 160, phase2LateralSpeed: 220, fireIntervalMs: 500,  phase2FireIntervalMs: 300,  phase2ShotCount: 7, glowTint: 0xff0000, phase2GlowTint: 0xff4400, bodyTint: null, specialAbility: 'bulletHell',    killsRequired: 315 },
   { level: 10, name: 'Omega',      texture: 'boss-10', maxHp: 500, phase2Hp: 250, lateralSpeed: 170, phase2LateralSpeed: 230, fireIntervalMs: 450,  phase2FireIntervalMs: 250,  phase2ShotCount: 7, glowTint: 0xffcc00, phase2GlowTint: 0xffee44, bodyTint: null, specialAbility: 'omega',         killsRequired: 375 },
 ];
+
+// ── Roguelite Perk system ──────────────────────────────────────────────────
+export type PerkRarity = 'common' | 'rare' | 'epic';
+
+export interface PerkDef {
+  readonly id: string;
+  readonly label: string;
+  readonly description: string;
+  readonly rarity: PerkRarity;
+  readonly icon: string;
+}
+
+export const PERK_RARITY_WEIGHTS: Record<PerkRarity, number> = {
+  common: 60,
+  rare:   30,
+  epic:   10,
+};
+
+export const PERK_RARITY_COLORS: Record<PerkRarity, string> = {
+  common: '#aad4ff',
+  rare:   '#c492ff',
+  epic:   '#ffe050',
+};
+
+export const PERKS: readonly PerkDef[] = [
+  // Common
+  { id: 'faster-bullets',   label: 'Velocity Round',     description: '+25% bullet speed',                    rarity: 'common', icon: '⚡' },
+  { id: 'fire-rate',        label: 'Hair Trigger',        description: '+18% fire rate',                       rarity: 'common', icon: '🔫' },
+  { id: 'speed-boost',      label: 'Afterburner',         description: '+15% movement speed',                  rarity: 'common', icon: '💨' },
+  { id: 'combo-timer',      label: 'Hot Streak',          description: 'Combo resets 2s later',                rarity: 'common', icon: '🔥' },
+  { id: 'score-bonus',      label: 'Point Magnet',        description: '+35% points awarded',                  rarity: 'common', icon: '💰' },
+  { id: 'powerup-magnet',   label: 'Gravity Well',        description: 'Power-ups drawn to player +80px',      rarity: 'common', icon: '🧲' },
+  { id: 'tougher-shield',   label: 'Reinforced Shield',   description: 'Shield absorbs 2 hits instead of 1',   rarity: 'common', icon: '🛡' },
+  { id: 'longer-powerups',  label: 'Extended Duration',   description: '+30% power-up duration',               rarity: 'common', icon: '⏱' },
+  { id: 'survival-bonus',   label: 'Endurance',           description: '+3 pts/sec survival bonus',            rarity: 'common', icon: '❤' },
+  // Rare
+  { id: 'extra-bullet',     label: 'Side Cannons',        description: 'Fire 2 extra angled bullets',          rarity: 'rare',   icon: '🎯' },
+  { id: 'combo-cap',        label: 'Overdrive',           description: 'Max combo multiplier raised to ×8',    rarity: 'rare',   icon: '🌀' },
+  { id: 'shield-regen',     label: 'Auto-Repair',         description: 'Regenerate 1 shield stack per 20s',    rarity: 'rare',   icon: '🔧' },
+  { id: 'score-x2',         label: 'Score Surge',         description: '+60% points awarded',                  rarity: 'rare',   icon: '⭐' },
+  { id: 'piercing-perk',    label: 'Armor Piercing',      description: 'Bullets pierce through 1 extra enemy', rarity: 'rare',   icon: '🗡' },
+  { id: 'powerup-duration', label: 'Overdose',            description: '+60% power-up duration',               rarity: 'rare',   icon: '💊' },
+  { id: 'combo-persist',    label: 'Relentless',          description: 'Damage no longer resets combo',        rarity: 'rare',   icon: '💢' },
+  { id: 'enemy-slow',       label: 'Gravity Field',       description: 'Enemies move 12% slower globally',     rarity: 'rare',   icon: '🌌' },
+  // Epic
+  { id: 'bullet-storm',     label: 'Bullet Storm',        description: 'Fire 5 bullets in a spread fan',       rarity: 'epic',   icon: '🌪' },
+  { id: 'overcharge',       label: 'Overcharge',          description: '+80% power-up duration',               rarity: 'epic',   icon: '⚡' },
+  { id: 'ghost-mode',       label: 'Ghost Protocol',      description: '2s invulnerability after taking damage',rarity: 'epic',   icon: '👻' },
+  { id: 'double-score',     label: 'Score Multiplier',    description: '×2 all points earned this run',        rarity: 'epic',   icon: '🌟' },
+  { id: 'turbo-fire',       label: 'Turbo Fire',          description: '+40% fire rate + faster bullets',       rarity: 'epic',   icon: '🚀' },
+  { id: 'rich-drops',       label: 'Bountiful',           description: '+50% power-up drop chance',            rarity: 'epic',   icon: '🎁' },
+  { id: 'combo-starter',    label: 'Hot Start',           description: 'Start each boss fight with ×3 combo',  rarity: 'epic',   icon: '🏆' },
+  { id: 'all-speed',        label: 'Apex',                description: '+25% movement + fire rate + bullet spd',rarity: 'epic',   icon: '👑' },
+];
+
+// ── Daily challenge system ─────────────────────────────────────────────────
+export type ChallengeType =
+  | 'kill_type'
+  | 'survive'
+  | 'score'
+  | 'no_damage'
+  | 'use_powerup'
+  | 'combo'
+  | 'defeat_boss';
+
+export interface ChallengeDef {
+  readonly type: ChallengeType;
+  readonly label: string;
+  readonly target: number;
+  readonly param?: string;
+}
+
+// ── Run history ────────────────────────────────────────────────────────────
+export interface RunRecord {
+  readonly date: string;
+  readonly score: number;
+  readonly grade: string;
+  readonly shipIndex: number;
+  readonly mode: GameMode;
+  readonly durationMs: number;
+}
